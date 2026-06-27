@@ -5388,6 +5388,10 @@ function guardarTrabajador(){
   // un trabajador), se preserva — regenerarlo invalidaría el enlace que ya
   // se le compartió. Si es nuevo, se genera aquí mismo.
   trab.tokenConsulta = (idx>=0 && DB.trabajadores[idx].tokenConsulta) ? DB.trabajadores[idx].tokenConsulta : _generarTokenConsulta();
+  // comisionAfpNet no tiene un campo propio en este formulario (se carga
+  // únicamente desde el archivo de resultado de AFPnet); si no se preserva
+  // aquí, "Guardar" lo borraría sin que el usuario lo haya tocado.
+  if(idx>=0 && DB.trabajadores[idx].comisionAfpNet!=null) trab.comisionAfpNet = DB.trabajadores[idx].comisionAfpNet;
   if(idx>=0)DB.trabajadores[idx]=trab;else DB.trabajadores.push(trab);
   guardarDB();cerrarModal('modal-trabajador');renderTrabajadores();actualizarDashboard();
   alert('✅ Trabajador guardado: '+apPat+', '+nombres);
@@ -11893,6 +11897,13 @@ function confirmarCargaResultadoAfpNet(){
     alert('Primero seleccione y cargue un archivo de resultado válido.');
     return;
   }
+  // Id del trabajador actualmente abierto en el formulario (si hay uno).
+  // Si coincide con alguno de los actualizados, hay que reflejar el cambio
+  // también en los campos visibles del formulario — de lo contrario, el
+  // botón "Guardar" del trabajador reconstruiría el registro a partir de
+  // esos campos (que seguirían mostrando el AFP/CUSPP/comisión viejos) y
+  // sobrescribiría silenciosamente lo que AFPnet acaba de actualizar.
+  const idAbierto = document.getElementById('t-id')?.value || '';
   let actualizados = 0;
   window._afpResultadoPendiente.forEach(({trabajador, cuspp, afp, comision})=>{
     const t = DB.trabajadores.find(x=>x.id===trabajador.id);
@@ -11907,10 +11918,20 @@ function confirmarCargaResultadoAfpNet(){
       t.comisionAfpNet = comision;
     }
     actualizados++;
+
+    if(idAbierto && String(t.id)===String(idAbierto)){
+      const elCuspp = document.getElementById('t-cuspp');
+      if(elCuspp && cuspp) elCuspp.value = cuspp;
+      const elAfp = document.getElementById('t-afp');
+      if(elAfp && afp) elAfp.value = afp;
+      const elComision = document.getElementById('comision-manual-input');
+      if(elComision && comision!=null) elComision.value = comision;
+      mostrarAFP();
+    }
   });
   guardarDB();
   cancelarCargaResultadoAfpNet();
-  alert('✅ Se actualizaron '+actualizados+' trabajador(es) con los datos de AFPnet (AFP, CUSPP y/o comisión).');
+  alert('✅ Se actualizaron '+actualizados+' trabajador(es) con los datos de AFPnet (AFP, CUSPP y/o comisión).'+(idAbierto?' Recuerde guardar el formulario para conservar el cambio.':''));
   renderTrabajadores();
 }
 
@@ -13153,8 +13174,9 @@ service cloud.firestore {
       <button class="modal-close" onclick="cerrarModal('modal-whatsapp-qr')" style="position:absolute;right:0;top:0">✕</button>
     </div>
     <p style="color:#555;font-size:13.5px;margin:6px 0 16px;line-height:1.5">
-      Abre la <b>cámara</b> o <b>WhatsApp</b> en tu celular y apunta a este código.<br>
-      Se abrirá WhatsApp en tu celular con la boleta lista para enviar — con emojis y colores completos.
+      Abre la app de <b>Cámara</b> de tu celular (no el escáner de WhatsApp) y apunta a este código.<br>
+      Se abrirá la boleta en tu celular; desde ahí, un botón te llevará a WhatsApp con todo listo — con emojis y colores completos.
+      <br><span style="font-size:12px;color:#c0392b">⚠️ El escáner QR dentro de WhatsApp dirá "código no válido" — es normal, está hecho solo para vincular WhatsApp Web. Usa la Cámara del celular en su lugar.</span>
       <br><span style="font-size:12px;color:#999">El celular necesita conexión a internet para abrir la boleta y WhatsApp.</span>
     </p>
     <div id="whatsapp-qr-canvas" style="display:flex;justify-content:center;align-items:center;min-height:220px;background:#fff;border-radius:10px;padding:12px;border:1px solid #e5e5e5"></div>
