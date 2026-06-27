@@ -5573,7 +5573,7 @@ function _ccMostrarBoletaDirecta(t, mes, anio){
     <div style="max-width:780px;margin:0 auto;padding:14px;font-family:Arial,sans-serif;">
       <div style="text-align:center;margin-bottom:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
         <button onclick="document.getElementById('cc-boleta-iframe').contentWindow.print()" style="background:#1A3A5C;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;cursor:pointer;">🖨️ Descargar / Imprimir como PDF</button>
-        <button onclick="_ccEnviarBoletaWhatsApp(${JSON.stringify(t.id)}, ${mes}, ${anio})" style="background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:7px;">
+        <button onclick='_ccEnviarBoletaWhatsApp(${JSON.stringify(t.id)}, ${mes}, ${anio})' style="background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:7px;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.85.5 3.58 1.41 5.06L2 22l5.25-1.5a9.8 9.8 0 0 0 4.79 1.25h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.84 9.84 0 0 0 12.04 2"/></svg>
           Enviar a otro WhatsApp
         </button>
