@@ -4763,6 +4763,12 @@ function cambiarEmpresa(idx){
   if(document.getElementById('tbody-trabajadores')){
     renderTrabajadores();
   }
+
+  // Si la pantalla "Mi Empresa" ya estaba abierta, refrescar sus campos
+  // (incluido el logo) para que no se queden mostrando los de la empresa anterior.
+  if(document.getElementById('e-razon')){
+    cargarFormEmpresa();
+  }
   
   // Actualizar cualquier otra tabla o información que dependa de la empresa
   try{ renderVencimientoApis(); }catch(e){}
@@ -4788,7 +4794,15 @@ function cargarFormEmpresa(){
   document.getElementById('e-regimen').value=e.regimen||'general';
   document.getElementById('e-digito').value=e.digitoRuc||'0';
   document.getElementById('e-regimen-trib').value=e.regimenTrib||'general';
-  if(e.logo){const img=document.getElementById('logo-preview');img.src=_resolverImagen(e.logo);img.style.display='block';document.getElementById('logo-txt').textContent='✅ Logo cargado';}
+  const imgLogo=document.getElementById('logo-preview');
+  const txtLogo=document.getElementById('logo-txt');
+  if(e.logo){
+    imgLogo.src=_resolverImagen(e.logo);imgLogo.style.display='block';txtLogo.textContent='✅ Logo cargado';
+  } else {
+    // Sin esto, al cambiar a una empresa sin logo propio se seguía viendo
+    // en pantalla el logo de la empresa anterior (la imagen no se limpiaba).
+    imgLogo.src='';imgLogo.style.display='none';txtLogo.textContent='🖼️ Clic para subir logo (PNG/JPG recomendado)';
+  }
 }
 function guardarEmpresa(){
   const e=getEmpresa();
