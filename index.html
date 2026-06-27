@@ -4140,7 +4140,24 @@ function _precargarImagenesIndexedDB(){
   (DB.empresas||[]).forEach(e=>{ if(_esReferenciaImagen(e.logo)) referencias.push(e.logo); });
   return Promise.all(referencias.map(ref=>
     _imgDBGet(ref).then(base64=>{ if(base64) _cacheImagenes.set(ref, base64); }).catch(()=>{})
-  ));
+  )).then(()=>{
+    // Para logos de empresa: si el navegador actual no tenía el dato en su
+    // IndexedDB local (ej. el logo se subió desde otro dispositivo, u otro
+    // origen como file:/// vs https://), pero sí existe una copia comprimida
+    // guardada dentro del propio documento de Firestore (e.logoFirestore),
+    // se usa esa copia — así el logo se ve igual sin importar desde qué PC
+    // o navegador se abra el sistema, sin necesitar Firebase Storage (que
+    // requiere el plan de pago Blaze).
+    (DB.empresas||[]).forEach(e=>{
+      const ref = 'logo_'+e.id;
+      if(_esReferenciaImagen(e.logo) && !_cacheImagenes.get(ref) && e.logoFirestore){
+        _cacheImagenes.set(ref, e.logoFirestore);
+        // Se guarda también en IndexedDB local para que las próximas veces
+        // sea instantáneo y no dependa de Firestore para mostrarlo.
+        _imgDBSet(ref, e.logoFirestore).catch(()=>{});
+      }
+    });
+  });
 }
 
 // Devuelve el base64 real listo para un <img src="...">, ya sea que el campo
@@ -4820,9 +4837,47 @@ function subirLogo(ev){
   const reader=new FileReader();
   reader.onload=function(e){
     const img=document.getElementById('logo-preview');img.src=e.target.result;img.style.display='block';
-    getEmpresa().logo=e.target.result;document.getElementById('logo-txt').textContent='✅ '+file.name;guardarDB();
+    const emp=getEmpresa();
+    emp.logo=e.target.result;document.getElementById('logo-txt').textContent='✅ '+file.name;
+    // Además del logo de alta calidad (guardado solo localmente en este
+    // navegador, vía IndexedDB), se genera una versión comprimida y pequeña
+    // que SÍ viaja dentro del propio documento de Firestore (logoFirestore).
+    // Así el logo se ve igual desde cualquier PC/navegador que abra el
+    // sistema, sin necesitar Firebase Storage (que requiere el plan pago
+    // Blaze) — el límite de Firestore es 1MB por documento, así que se
+    // mantiene la imagen comprimida bien por debajo de eso.
+    _comprimirImagenParaFirestore(e.target.result).then(comprimida=>{
+      emp.logoFirestore = comprimida;
+      guardarDB();
+    }).catch(()=>{ guardarDB(); }); // si falla la compresión, igual se guarda el logo local
   };reader.readAsDataURL(file);
 }
+
+// Redimensiona una imagen base64 a un ancho máximo y la recodifica como JPEG
+// de calidad media, para que su tamaño en base64 quede muy por debajo del
+// límite de 1MB por documento de Firestore (apuntamos a ~80-150KB típico).
+function _comprimirImagenParaFirestore(base64Original){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const ANCHO_MAX = 300;
+      const escala = Math.min(1, ANCHO_MAX / img.width);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * escala);
+      canvas.height = Math.round(img.height * escala);
+      const ctx = canvas.getContext('2d');
+      // Fondo blanco primero (por si el logo original tiene transparencia
+      // y se exporta a JPEG, que no soporta canal alfa).
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', 0.7));
+    };
+    img.onerror = reject;
+    img.src = base64Original;
+  });
+}
+
 function renderEmpresasTabla(){
   const tbody=document.getElementById('tbody-empresas');
   tbody.innerHTML=DB.empresas.map((e,i)=>{
@@ -4902,7 +4957,7 @@ function editarTrabajador(id){
   };
   Object.entries(campos).forEach(([k,v])=>{const el=document.getElementById('t-'+k);if(el)el.value=v||'';});
   document.getElementById('t-sctr-monto').value=t.sctrMonto||0;
-  document.getElementById('t-svl-monto').value=t.svlMonto || 15; // Defecto S/ 15 (0.53% de 1130)
+  document.getElementById('t-svl-monto').value=(t.svlMonto!=null && t.svlMonto!=='') ? t.svlMonto : '';
   ['nacimiento','ingreso','cese'].forEach(k=>{const el=document.getElementById('t-'+k);if(el)el.value=t[k]||'';});
   ['tipo-doc','sexo','ecivil','banco','tipo','regimen','contrato','jornada','asigfam','situacion','pension','afp','tipo-comision','seguro-salud','motivo-cese'].forEach(k=>{
     const el=document.getElementById('t-'+k);if(el)el.value=t[k.replace(/-([a-z])/g,(_,c)=>c.toUpperCase())]||el.options[0].value;
@@ -4945,7 +5000,7 @@ function editarTrabajador(id){
 function limpiarFormTrab(){
   ['t-ap-pat','t-ap-mat','t-nombres','t-doc','t-dir','t-cel','t-email','t-cargo','t-area','t-eps','t-cta-sueldo','t-cta-cts','t-cta-pension','t-cuspp','t-nacimiento','t-ingreso','t-cese'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('t-sctr-monto').value=0;     // SCTR: S/ 0.00 (sin cobertura por defecto)
-  document.getElementById('t-svl-monto').value=15;     // Seguro Vida Ley: S/ 15.00 por defecto (0.53% de 1130)
+  document.getElementById('t-svl-monto').value='';     // Seguro Vida Ley: vacío por defecto (sin aporte, salvo que se ingrese un monto)
   document.getElementById('t-banco').value='';
   document.getElementById('t-banco-cts').value='';
   document.getElementById('t-sueldo').value=1130;
@@ -5391,7 +5446,7 @@ function guardarTrabajador(){
     ctaPension:document.getElementById('t-cta-pension').value,
     seguroSalud:document.getElementById('t-seguro-salud').value,
     sctrMonto:parseFloat(document.getElementById("t-sctr-monto").value)||0,
-    svlMonto:parseFloat(document.getElementById("t-svl-monto").value)||15,
+    svlMonto:parseFloat(document.getElementById("t-svl-monto").value)||0,
     eps:document.getElementById('t-eps').value,
     foto:document.getElementById('trab-foto-data').value,
     derechohabientes: window._dhTemp || [],
@@ -6156,8 +6211,8 @@ function renderTablaDerechohabientes(){
 // ══════════════════════════════════════════════════════════════
 function calcNeto(t,diasTrab,hext25,hext35,otros,adelanto,faltas,tardanza,otrosDesc,mesP,anioP){
   // Garantizar que los aportes del empleador tengan valores por defecto
-  if(!t.svlMonto) t.svlMonto = 15; // Seguro Vida Ley: S/ 15.00
-  if(!t.sctrMonto) t.sctrMonto = 0; // SCTR: S/ 0.00
+  if(t.svlMonto==null || t.svlMonto==='') t.svlMonto = 0; // Seguro Vida Ley: sin valor guardado = sin aporte (S/ 0.00)
+  if(t.sctrMonto==null || t.sctrMonto==='') t.sctrMonto = 0; // SCTR: S/ 0.00
 
   const cfg=getConfig();
   const sueldo=parseFloat(t.sueldo)||0;
@@ -6282,7 +6337,7 @@ function calcAportesEmpleador(t,totalIngr,aporteConceptosManual){
   // (pestaña "Seguros"), no un porcentaje del ingreso — se aplica tal cual todos los
   // meses mientras el trabajador tenga ese monto configurado.
   const sctrP=parseFloat(t.sctrMonto)||0; // SCTR: 0 por defecto
-  const svlP = t.svlMonto != null ? parseFloat(t.svlMonto) : 15; // Por defecto S/ 15.00 si está vacío
+  const svlP = parseFloat(t.svlMonto)||0; // Seguro Vida Ley: 0 por defecto, sin aporte salvo monto ingresado
   const otrosAportes=parseFloat(aporteConceptosManual)||0;
   return{essalud,sis,sctrP,svlP,otrosAportes,total:essalud+sis+sctrP+svlP+otrosAportes};
 }
