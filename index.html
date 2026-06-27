@@ -4036,6 +4036,7 @@ function cargarDB(){
   _precargarImagenesIndexedDB().then(()=>{
     try{ renderTrabajadores(); }catch(e){}
     try{ actualizarDashboard(); }catch(e){}
+    try{ if(document.getElementById('e-razon')) cargarFormEmpresa(); }catch(e){}
   });
 }
 
