@@ -5571,13 +5571,64 @@ function _ccMostrarBoletaDirecta(t, mes, anio){
     </style></head><body>${boletaHtml}</body></html>`;
   cont.innerHTML = `
     <div style="max-width:780px;margin:0 auto;padding:14px;font-family:Arial,sans-serif;">
-      <div style="text-align:center;margin-bottom:10px;">
+      <div style="text-align:center;margin-bottom:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
         <button onclick="document.getElementById('cc-boleta-iframe').contentWindow.print()" style="background:#1A3A5C;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;cursor:pointer;">🖨️ Descargar / Imprimir como PDF</button>
+        <button onclick="_ccEnviarBoletaWhatsApp(${JSON.stringify(t.id)}, ${mes}, ${anio})" style="background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:7px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.85.5 3.58 1.41 5.06L2 22l5.25-1.5a9.8 9.8 0 0 0 4.79 1.25h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.84 9.84 0 0 0 12.04 2"/></svg>
+          Enviar a otro WhatsApp
+        </button>
       </div>
       <iframe id="cc-boleta-iframe" style="width:100%;height:80vh;border:1px solid #e3e6eb;border-radius:8px;"></iframe>
     </div>`;
   const iframe = document.getElementById('cc-boleta-iframe');
   iframe.srcdoc = htmlInterno;
+}
+
+// Construye el texto de boleta (con emojis) y abre WhatsApp directo desde
+// ESTA página — pensado para usarse desde el celular (tras escanear el QR
+// que apunta al link corto de consulta), así los emojis salen siempre a
+// color sin depender de servicios externos de acortado de URL.
+function _ccEnviarBoletaWhatsApp(tId, mes, anio){
+  const t = (DB.trabajadores||[]).find(x=>x.id===tId);
+  if(!t){ alert('No se encontró al trabajador.'); return; }
+  const pl = DB.planillas.find(p=>p.tId===t.id&&p.mes===mes&&p.anio==anio);
+  if(!pl){ alert('No se encontró la boleta.'); return; }
+  const r = pl;
+  const emp = DB.empresas.find(e=>e.id===t.empresaId) || getEmpresa();
+  const mesNom = (typeof MESES !== 'undefined' ? MESES[mes] : '') + ' ' + anio;
+  const fmt2 = v => typeof fmt === 'function' ? fmt(v) : parseFloat(v||0).toFixed(2);
+  const totDesc = (r.descPension||0)+(r.descAfpCom||0)+(r.descAfpPrima||0)+(r.renta5||0)+(r.adelanto||0)+(r.otrosDesc||0);
+  const nombreCompleto = (t.apPat||'')+' '+(t.apMat||'')+', '+(t.nombres||'');
+  const urlDescarga = _urlDescargaBoleta(t, mes, anio);
+  const bloqueDescarga = urlDescarga ? '📲 *Descargue su boleta aquí:*\n'+urlDescarga+'\n━━━━━━━━━━━━━━━━━━━\n' : '';
+
+  const msg =
+`🧾 *BOLETA DE PAGO DE REMUNERACIONES*
+🏢 *${emp.razon || 'Empresa'}*  |  RUC: ${emp.ruc||''}
+📅 *Período: ${mesNom}*
+━━━━━━━━━━━━━━━━━━━
+👤 *Trabajador:* ${nombreCompleto}
+🪪 *Doc.:* ${t.doc||''}
+💼 *Cargo:* ${t.cargo||''}  |  *Área:* ${t.area||''}
+━━━━━━━━━━━━━━━━━━━
+💰 *INGRESOS*
+• Sueldo Básico: S/ ${fmt2(r.sueldoProporcion||r.sueldo)}${r.asigFam>0?'\n• Asig. Familiar: S/ '+fmt2(r.asigFam):''}${r.horas25>0?'\n• HH.EE 25%: S/ '+fmt2(r.horas25):''}${r.horas35>0?'\n• HH.EE 35%: S/ '+fmt2(r.horas35):''}${r.otrosIngr>0?'\n• Otros: S/ '+fmt2(r.otrosIngr):''}
+📊 *Total Ingresos: S/ ${fmt2(r.totalIngr)}*
+━━━━━━━━━━━━━━━━━━━
+📉 *DESCUENTOS*
+• ${t.pension==='afp'?'AFP 10%':'ONP 13%'}: S/ ${fmt2(r.descPension)}${t.pension==='afp'?'\n• Comisión AFP: S/ '+fmt2(r.descAfpCom)+'\n• Prima AFP: S/ '+fmt2(r.descAfpPrima):''}${r.renta5>0?'\n• Renta 5ta: S/ '+fmt2(r.renta5):''}${r.adelanto>0?'\n• Adelanto: S/ '+fmt2(r.adelanto):''}
+📊 *Total Descuentos: S/ ${fmt2(totDesc)}*
+━━━━━━━━━━━━━━━━━━━
+💵 *NETO A PAGAR: S/ ${fmt2(r.neto)}*
+━━━━━━━━━━━━━━━━━━━
+${bloqueDescarga}_Sistema Planilla Perú 2026_`;
+
+  const tel = (t.cel || '').replace(/\D/g,'');
+  const telFull = (tel && tel.length >= 9) ? (tel.startsWith('51') ? tel : '51' + tel) : '';
+  const url = telFull
+    ? 'https://wa.me/' + telFull + '?text=' + encodeURIComponent(msg)
+    : 'https://wa.me/?text=' + encodeURIComponent(msg);
+  window.open(url, '_blank');
 }
 
 function renderConsultaCloudTrabajador(t){
@@ -13104,6 +13155,7 @@ service cloud.firestore {
     <p style="color:#555;font-size:13.5px;margin:6px 0 16px;line-height:1.5">
       Abre la <b>cámara</b> o <b>WhatsApp</b> en tu celular y apunta a este código.<br>
       Se abrirá WhatsApp en tu celular con la boleta lista para enviar — con emojis y colores completos.
+      <br><span style="font-size:12px;color:#999">El celular necesita conexión a internet para abrir la boleta y WhatsApp.</span>
     </p>
     <div id="whatsapp-qr-canvas" style="display:flex;justify-content:center;align-items:center;min-height:220px;background:#fff;border-radius:10px;padding:12px;border:1px solid #e5e5e5"></div>
     <div id="whatsapp-qr-status" style="margin-top:10px;font-size:12.5px;color:#888"></div>
@@ -13321,12 +13373,9 @@ function enviarBoletaWhatsApp(){
 ━━━━━━━━━━━━━━━━━━━
 `;
 
-  // Versión completa (con link de descarga) — se usa al abrir WhatsApp directo en celular.
+  // Mensaje completo de la boleta, con link de descarga incluido — se usa
+  // al abrir WhatsApp directo en celular.
   const msg = cuerpoBoleta + bloqueDescarga + '_Sistema Planilla Perú 2026_';
-
-  // Versión corta SIN el link de descarga — se usa solo para el QR, así el
-  // patrón queda mucho menos denso y se escanea rápido y sin errores.
-  const msgCorto = cuerpoBoleta + '_Sistema Planilla Perú 2026_';
 
   // Si el trabajador tiene celular, abrir WhatsApp directo; si no, solo compartir
   const tel = (t.cel || '').replace(/\D/g,'');
@@ -13334,43 +13383,54 @@ function enviarBoletaWhatsApp(){
   const urlWa = telFull
     ? 'https://wa.me/' + telFull + '?text=' + encodeURIComponent(msg)
     : 'https://wa.me/?text=' + encodeURIComponent(msg);
-  const urlWaCorta = telFull
-    ? 'https://wa.me/' + telFull + '?text=' + encodeURIComponent(msgCorto)
-    : 'https://wa.me/?text=' + encodeURIComponent(msgCorto);
 
   // En celular: abrir WhatsApp directo (ahí los emojis ya salen a color).
-  // En PC: mostrar un QR para escanear con el celular — evita que el navegador
-  // de escritorio dibuje los emojis sin color al pasar por WhatsApp Web.
+  // En PC: mostrar un QR que apunta al link corto de consulta del propio
+  // sistema (no al mensaje completo de WhatsApp) — así el QR queda chico y
+  // fácil de escanear sin depender de ningún servicio externo de terceros.
+  // Al escanearlo desde el celular, se abre la boleta con su propio botón
+  // "Enviar a otro WhatsApp" (ver _ccEnviarBoletaWhatsApp), que sí arma el
+  // mensaje completo con emojis a color desde el navegador del celular.
   const esMovil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   if(esMovil){
     ejsStatus('ok','✅ Abriendo WhatsApp' + (tel ? ' para ' + (t.nombres||'el trabajador') : ''));
     window.open(urlWa, '_blank');
+  } else if(urlDescarga){
+    mostrarQrWhatsApp(urlDescarga, tel ? (t.nombres||'el trabajador') : '');
   } else {
-    mostrarQrWhatsApp(urlWaCorta, tel ? (t.nombres||'el trabajador') : '', urlDescarga);
+    // Si el trabajador aún no tiene token de consulta generado, no hay
+    // link corto propio disponible — se usa el link largo de WhatsApp
+    // directo como respaldo (el QR puede salir más denso en este caso).
+    mostrarQrWhatsApp(urlWa, tel ? (t.nombres||'el trabajador') : '', true);
   }
 }
 
 // ── MOSTRAR QR PARA ENVIAR BOLETA DESDE EL CELULAR (emojis a color) ──
-function mostrarQrWhatsApp(urlWa, nombreTrabajador, urlDescarga){
-  const cont = document.getElementById('whatsapp-qr-canvas');
-  cont.innerHTML = '';
+// urlCorta: por defecto, el link propio de Consulta Cloud (?consulta=...&boleta=...),
+// que ya es corto y queda con un QR limpio. Si no existe (esEnlaceLargo=true),
+// usamos el link wa.me completo como respaldo, que genera un QR más denso.
+function mostrarQrWhatsApp(urlCorta, nombreTrabajador, esEnlaceLargo){
+  const cont   = document.getElementById('whatsapp-qr-canvas');
   const estado = document.getElementById('whatsapp-qr-status');
+  cont.innerHTML = '';
 
   let avisos = nombreTrabajador ? ('Para: ' + nombreTrabajador) : '';
-  if(urlDescarga){
-    avisos += (avisos?'<br>':'') + '<span style="color:#888">El link de descarga no va en el QR (para mantenerlo simple). El trabajador puede pedirlo aparte si lo necesita.</span>';
+  if(esEnlaceLargo){
+    avisos += (avisos?'<br>':'') + '<span style="color:#c0392b">⚠️ Este trabajador aún no tiene su enlace de Consulta Cloud generado, así que el QR salió más denso de lo ideal. Genera su enlace desde "Consulta Cloud" en el menú para tener QRs más simples.</span>';
+  } else {
+    avisos += (avisos?'<br>':'') + '<span style="color:#888">Al escanear se abrirá la boleta; desde ahí, el botón verde "Enviar a otro WhatsApp" abre WhatsApp con todo listo, emojis a color incluidos.</span>';
   }
   estado.innerHTML = avisos;
 
   try{
     new QRCode(cont, {
-      text: urlWa,
-      width: 280,
-      height: 280,
+      text: urlCorta,
+      width: 240,
+      height: 240,
       colorDark: '#128C7E',
       colorLight: '#ffffff',
-      correctLevel: QRCode.CorrectLevel.L
+      correctLevel: QRCode.CorrectLevel.M
     });
   }catch(e){
     cont.innerHTML = '<div style="color:#c0392b;font-size:13px;padding:20px">No se pudo generar el código QR.</div>';
