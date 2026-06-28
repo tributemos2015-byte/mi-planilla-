@@ -1331,7 +1331,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
     <button class="btn btn-primary" onclick="abrirModalTrabajador()">➕ Nuevo Trabajador</button>
   </div>
   <div class="card" style="padding:0;overflow:hidden;">
-    <div class="table-wrap"><table><thead><tr><th>Foto</th><th>DNI</th><th>Apellidos y Nombres</th><th>Cargo</th><th>Régimen</th><th>AFP/ONP</th><th>Sueldo</th><th>Ingreso</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="tbody-trabajadores"></tbody></table></div>
+    <div class="table-wrap"><table><thead><tr><th>Foto</th><th>DNI</th><th>Apellidos y Nombres</th><th>Fecha de Ingreso</th><th>Cargo</th><th>Régimen</th><th>AFP/ONP</th><th>Sueldo</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="tbody-trabajadores"></tbody></table></div>
   </div>
 </div>
 
@@ -4928,10 +4928,11 @@ function renderTrabajadores(filtro=''){
     return`<tr>
       <td>${foto}</td><td>${t.doc||'—'}</td>
       <td><b>${t.apPat} ${t.apMat}</b><br><small style="color:#888">${t.nombres}</small></td>
+      <td>${_fechaDDMMAAAA(t.ingreso)}</td>
       <td>${t.cargo||'—'}</td>
       <td><span class="badge ${regBadge}">${regLabel}</span></td>
       <td>${t.pension==='afp'?'AFP '+capitalize(t.afp||''):t.pension==='onp'?'ONP':'—'}</td>
-      <td>S/ ${fmt(t.sueldo)}</td><td>${_fechaDDMMAAAA(t.ingreso)}</td>
+      <td>S/ ${fmt(t.sueldo)}</td>
       <td><span class="badge ${sitBadge}">${capitalize(t.situacion||'activo')}</span></td>
       <td style="white-space:nowrap">
         <button class="btn btn-sm btn-primary" onclick="editarTrabajador('${t.id}')">✏️</button>
