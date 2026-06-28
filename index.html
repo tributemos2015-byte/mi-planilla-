@@ -4927,7 +4927,7 @@ function renderTrabajadores(filtro=''){
     const sitBadge=t.situacion==='activo'||!t.situacion?'badge-verde':t.situacion==='cesado'?'badge-rojo':'badge-dorado';
     return`<tr>
       <td>${foto}</td><td>${t.doc||'—'}</td>
-      <td><b>${t.apPat} ${t.apMat}</b><br><small style="color:#888">${t.nombres}</small></td>
+      <td><b>${t.apPat} ${t.apMat}, ${t.nombres}</b></td>
       <td>${_fechaDDMMAAAA(t.ingreso)}</td>
       <td>${t.cargo||'—'}</td>
       <td><span class="badge ${regBadge}">${regLabel}</span></td>
