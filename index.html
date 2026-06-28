@@ -4931,7 +4931,7 @@ function renderTrabajadores(filtro=''){
       <td>${t.cargo||'—'}</td>
       <td><span class="badge ${regBadge}">${regLabel}</span></td>
       <td>${t.pension==='afp'?'AFP '+capitalize(t.afp||''):t.pension==='onp'?'ONP':'—'}</td>
-      <td>S/ ${fmt(t.sueldo)}</td><td>${t.ingreso||'—'}</td>
+      <td>S/ ${fmt(t.sueldo)}</td><td>${_fechaDDMMAAAA(t.ingreso)}</td>
       <td><span class="badge ${sitBadge}">${capitalize(t.situacion||'activo')}</span></td>
       <td style="white-space:nowrap">
         <button class="btn btn-sm btn-primary" onclick="editarTrabajador('${t.id}')">✏️</button>
@@ -11413,7 +11413,7 @@ function generarArchivosPLAME(){
       remFila('0606', 0, r.descAfpPrima||0); // 0606 - Prima de Seguro AFP
       remFila('0608', 0, r.descPension||0);  // 0608 - SPP Aportación Obligatoria 10%
     } else if(t.pension==='onp'){
-      remFila('0607', 0, r.descPension||0);  // 0607 - Sistema Nacional de Pensiones (ONP) 13%
+      remFila('0607', 0, r.descPension||0);  // 0607 - Sistema Nacional de Pensiones (ONP) 13% (DL 19990)
     }
     
     // ╔════════════════════════════════════════════════════════════════════════╗
