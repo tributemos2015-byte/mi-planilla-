@@ -15419,7 +15419,26 @@ function hacerLogin(){
     const uid = data.localId;
     localStorage.setItem('planilla_session', JSON.stringify({uid, email, ts:Date.now(), idToken:data.idToken}));
     _aplicarPermisos(uid, email);
-    _mostrarApp();
+    // Mostrar app directamente
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app-main').style.display='block';
+    if(!window._appIniciada){
+      window._appIniciada = true;
+      setTimeout(()=>{
+        try{ _iniciarAppPrincipal(); }catch(e){ console.error('Error app principal:',e); }
+        try{
+          const header=document.getElementById('header');
+          if(header && !document.getElementById('btn-cerrar-sesion')){
+            const ses=window._sesionActual||{esAdmin:true,email};
+            const div=document.createElement('div');
+            div.style.cssText='display:flex;align-items:center;gap:10px;margin-left:auto;';
+            div.innerHTML=`<span style="font-size:12px;color:rgba(255,255,255,.7)">${ses.esAdmin?'👑 Admin':'👤 Usuario'} · ${ses.email}</span>
+              <button id="btn-cerrar-sesion" onclick="cerrarSesion()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">🚪 Salir</button>`;
+            header.appendChild(div);
+          }
+        }catch(e){}
+      }, 100);
+    }
   })
   .catch(err=>{
     btnEl.disabled=false; loadEl.style.display='none';
