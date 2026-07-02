@@ -1196,6 +1196,13 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
   </div>
 </div>
 <script>
+// Función global de logout — debe estar fuera de la IIFE para ser accesible desde el botón del header
+function _doLogout(){
+  if(!confirm('¿Cerrar sesión?'))return;
+  localStorage.removeItem('planilla_login_v1');
+  location.reload();
+}
+
 !function(){
   var K='planilla_login_v1', AK='AIzaSyCZYSuL1zzGkUHxtxLG73FpcHNbeMZF94E';
   function hide(){
