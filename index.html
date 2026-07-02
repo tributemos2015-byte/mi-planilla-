@@ -15355,7 +15355,8 @@ function recuperarClave(){
     errorEl.textContent='⚠️ Escribe tu correo arriba y luego haz clic en "¿Olvidaste tu contraseña?".';
     errorEl.style.display='block'; return;
   }
-  const auth = _getLoginAuth();
+  let auth;
+  try{ auth = firebase.app('[DEFAULT]').auth(); }catch(e){ auth = null; }
   if(!auth){
     errorEl.textContent='⚠️ Sin conexión a Firebase. Verifica tu internet.';
     errorEl.style.display='block'; return;
@@ -15405,7 +15406,8 @@ function hacerLogin(){
     if(!firebase.apps || firebase.apps.length === 0){
       setTimeout(()=>intentarAuth(intentos+1), 200); return;
     }
-    const auth = firebase.apps[0].auth();
+    // Usar siempre la app [DEFAULT] que es la correcta
+    const auth = firebase.app('[DEFAULT]').auth();
     _loginAuth = auth;
     auth.signInWithEmailAndPassword(email, password)
       .then(cred=>{
@@ -15508,10 +15510,8 @@ function _filtrarEmpresasPermitidas(){
 
 function cerrarSesion(){
   if(!confirm('¿Cerrar sesión?')) return;
-  const auth = _getLoginAuth();
-  if(auth) auth.signOut().catch(()=>{});
+  try{ firebase.app('[DEFAULT]').auth().signOut(); }catch(e){}
   localStorage.removeItem('planilla_session');
-  // Recargar la página para volver al login
   location.reload();
 }
 
