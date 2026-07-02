@@ -5021,12 +5021,11 @@ function eliminarFirmaEmpleador(){
 
 // Devuelve el HTML de la imagen de firma del empleador para insertar en documentos.
 // Si no hay firma configurada, devuelve una cadena vacía (sin imagen).
-function _firmaEmpresaHtml(estiloImg){
+function _firmaEmpresaHtml(claseImg){
   const emp = getEmpresa();
   if(!emp || !emp.firma) return '';
-  // estiloImg es un string de CSS inline (ej. "max-height:40px;..."), no una clase.
-  const style = estiloImg || 'max-height:44px;max-width:140px;object-fit:contain;';
-  return `<img src="${emp.firma}" style="${style}" alt="Firma empleador">`;
+  const cls = claseImg || 'boleta-firma-img';
+  return `<img src="${emp.firma}" class="${cls}" alt="Firma empleador">`;
 }
 
 // Redimensiona una imagen base64 a un ancho máximo y la recodifica como JPEG
@@ -7587,12 +7586,12 @@ function htmlBoleta(t,r,ae,mes,anio){
   </table>
   <div class="boleta-neto">NETO A PAGAR: S/ ${fmt(r.neto)}</div>
   <div class="boleta-firmas-grid">
-    <div><div style="height:34px;"></div><div class="boleta-firma-linea" style="margin-top:0;"></div>
+    <div><div class="boleta-firma-linea"></div>
       <div style="text-align:center;margin-top:3px"><b>${t.apPat} ${t.apMat}, ${t.nombres}</b></div>
       <div style="text-align:center">${t.tipoDoc||'DNI'}: ${t.doc||'—'}</div></div>
-    <div>
-      <div style="height:34px;display:flex;align-items:flex-end;justify-content:center;">${emp.firma?`<img src="${emp.firma}" style="max-height:32px;max-width:130px;object-fit:contain;" alt="Firma">`:''}</div>
-      <div class="boleta-firma-linea" style="margin-top:0;"></div>
+    <div style="position:relative">
+      ${emp.firma?`<img src="${emp.firma}" style="max-height:44px;max-width:140px;position:absolute;top:-54px;left:50%;transform:translateX(-50%);" alt="Firma">`:''}
+      <div class="boleta-firma-linea"></div>
       <div style="text-align:center;margin-top:3px"><b>${emp.razon||'—'}</b></div>
       <div style="text-align:center">RUC: ${emp.ruc||'—'}</div></div>
   </div>`;
@@ -7643,7 +7642,7 @@ function _cssDosCopiaBoleta(){
     .boleta-copia-wrap .boleta-tabla th{padding:2px 9px;}
     .boleta-copia-wrap .boleta-tabla td{padding:1px 9px;}
     .boleta-copia-wrap .boleta-neto{padding:5px;font-size:12px;}
-    .boleta-copia-wrap .boleta-firmas-grid{padding:0 16px;margin-top:78px;}
+    .boleta-copia-wrap .boleta-firmas-grid{padding:4px 16px 0;position:absolute;bottom:6px;left:0;width:100%;box-sizing:border-box;}
     .boleta-copia-wrap .boleta-firma-linea{margin-top:0;}
     @media print{
       @page{size:A4 portrait;margin:6mm}
@@ -7691,7 +7690,7 @@ function _cssDosCopiaBoletaGratificacion(){
     .boleta-copia-wrap .gratb-tabla{font-size:8.5px;}
     .boleta-copia-wrap .gratb-tabla td{padding:1px 10px;}
     .boleta-copia-wrap .gratb-neto-box{padding:3px;font-size:10.5px;margin-top:2px;}
-    .boleta-copia-wrap .boleta-firmas-grid{padding:0 16px;margin-top:78px;}
+    .boleta-copia-wrap .boleta-firmas-grid{padding:4px 16px 0;position:absolute;bottom:6px;left:0;width:100%;box-sizing:border-box;}
     .boleta-copia-wrap .boleta-firma-linea{margin-top:0;}
     @media print{
       @page{size:A4 portrait;margin:6mm}
@@ -9058,12 +9057,12 @@ function htmlBoletaGratificacion(t,calc,periodo,anio,ciudad,fecha){
   <div class="gratb-neto-box">MONTO PAGADO: S/ ${fmt(calc.neto)}</div>
   <div style="padding:8px 18px 0;font-size:11px;color:#444;">SON: ${_liqNumLetras(calc.neto)}</div>
   <div class="boleta-firmas-grid" style="margin-top:6px;">
-    <div><div style="height:34px;"></div><div class="boleta-firma-linea" style="margin-top:0;"></div>
+    <div><div class="boleta-firma-linea"></div>
       <div style="text-align:center;margin-top:3px"><b>${t.apPat} ${t.apMat}, ${t.nombres}</b></div>
       <div style="text-align:center">${t.tipoDoc||'DNI'}: ${t.doc||'—'}</div></div>
-    <div>
-      <div style="height:34px;display:flex;align-items:flex-end;justify-content:center;">${emp.firma?`<img src="${emp.firma}" style="max-height:32px;max-width:130px;object-fit:contain;" alt="Firma">`:''}</div>
-      <div class="boleta-firma-linea" style="margin-top:0;"></div>
+    <div style="position:relative">
+      ${emp.firma?`<img src="${emp.firma}" style="max-height:44px;max-width:140px;position:absolute;top:-54px;left:50%;transform:translateX(-50%);" alt="Firma">`:''}
+      <div class="boleta-firma-linea"></div>
       <div style="text-align:center;margin-top:3px"><b>${emp.razon||'—'}</b></div>
       <div style="text-align:center">RUC: ${emp.ruc||'—'}</div></div>
   </div>`;
@@ -10305,12 +10304,12 @@ function htmlLiquidacionDocumento(L, emp){
     </div>
 
     <div class="boleta-firmas-grid">
-      <div><div style="height:34px;"></div><div class="boleta-firma-linea" style="margin-top:0;"></div>
+      <div><div class="boleta-firma-linea"></div>
         <div style="text-align:center;margin-top:3px"><b>${nombreCompleto.toUpperCase()}</b></div>
         <div style="text-align:center">${t?(t.tipoDoc||'DNI')+': '+(t.doc||'—'):'—'}</div></div>
-      <div>
-        <div style="height:34px;display:flex;align-items:flex-end;justify-content:center;">${emp.firma?`<img src="${emp.firma}" style="max-height:32px;max-width:130px;object-fit:contain;" alt="Firma">`:''}</div>
-        <div class="boleta-firma-linea" style="margin-top:0;"></div>
+      <div style="position:relative">
+        ${emp.firma?`<img src="${emp.firma}" style="max-height:44px;max-width:140px;position:absolute;top:-54px;left:50%;transform:translateX(-50%);" alt="Firma">`:''}
+        <div class="boleta-firma-linea"></div>
         <div style="text-align:center;margin-top:3px"><b>${emp.razon.toUpperCase()}</b></div>
         <div style="text-align:center">Empleador / Representante Legal${emp.ruc?' — RUC: '+emp.ruc:''}</div></div>
     </div>
