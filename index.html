@@ -944,8 +944,10 @@ table.gp-tabla td.gp-col-saldo{background:#C6E0B4;font-weight:800;}
 .boleta-tabla td{padding:5px 10px;border-bottom:1px solid #f0f0f0;}
 .boleta-total-row{background:#e8f0fb;font-weight:800;}
 .boleta-neto{background:var(--azul);color:white;text-align:center;padding:12px;font-size:16px;font-weight:800;}
-.boleta-firmas-grid{display:grid;grid-template-columns:1fr 1fr;padding:36px 18px 24px;gap:30px;font-size:11px;color:#555;}
-.boleta-firma-linea{border-top:1px solid #999;margin-top:52px;padding-top:6px;text-align:center;}
+.boleta-firmas-grid{display:grid;grid-template-columns:1fr 1fr;padding:36px 18px 24px;gap:30px;font-size:11px;color:#555;align-items:end;}
+.boleta-firma-linea{border-top:1px solid #999;margin-top:48px;padding-top:6px;text-align:center;}
+.boleta-firma-wrap{position:relative;min-height:80px;display:flex;flex-direction:column;justify-content:flex-end;}
+.boleta-firma-img{max-height:50px;max-width:150px;position:absolute;bottom:28px;left:50%;transform:translateX(-50%);}
 /* Cuando la boleta va dentro de una copia apilada (impresión con 2 copias por hoja),
    se reduce el espaciado de firma para que ambas copias quepan en una sola página A4. */
 .boleta-copia-wrap .boleta-firmas-grid{padding:14px 18px 10px;}
@@ -5021,11 +5023,11 @@ function eliminarFirmaEmpleador(){
 
 // Devuelve el HTML de la imagen de firma del empleador para insertar en documentos.
 // Si no hay firma configurada, devuelve una cadena vacía (sin imagen).
-function _firmaEmpresaHtml(estilo){
+function _firmaEmpresaHtml(claseImg){
   const emp = getEmpresa();
   if(!emp || !emp.firma) return '';
-  const st = estilo || 'max-height:50px;max-width:150px;display:block;margin:0 auto -8px;';
-  return `<img src="${emp.firma}" style="${st}" alt="Firma empleador">`;
+  const cls = claseImg || 'boleta-firma-img';
+  return `<img src="${emp.firma}" class="${cls}" alt="Firma empleador">`;
 }
 
 // Redimensiona una imagen base64 a un ancho máximo y la recodifica como JPEG
@@ -7586,12 +7588,17 @@ function htmlBoleta(t,r,ae,mes,anio){
   </table>
   <div class="boleta-neto">NETO A PAGAR: S/ ${fmt(r.neto)}</div>
   <div class="boleta-firmas-grid">
-    <div><div class="boleta-firma-linea"></div>
+    <div class="boleta-firma-wrap">
+      <div class="boleta-firma-linea"></div>
       <div style="text-align:center;margin-top:3px"><b>${t.apPat} ${t.apMat}, ${t.nombres}</b></div>
-      <div style="text-align:center">${t.tipoDoc||'DNI'}: ${t.doc||'—'}</div></div>
-    <div>${_firmaEmpresaHtml()}<div class="boleta-firma-linea"></div>
+      <div style="text-align:center">${t.tipoDoc||'DNI'}: ${t.doc||'—'}</div>
+    </div>
+    <div class="boleta-firma-wrap">
+      ${_firmaEmpresaHtml()}
+      <div class="boleta-firma-linea"></div>
       <div style="text-align:center;margin-top:3px"><b>${emp.razon||'—'}</b></div>
-      <div style="text-align:center">RUC: ${emp.ruc||'—'}</div></div>
+      <div style="text-align:center">RUC: ${emp.ruc||'—'}</div>
+    </div>
   </div>`;
 }
 function renderBoletaHTML(t,r,ae,mes,anio){
@@ -9055,12 +9062,17 @@ function htmlBoletaGratificacion(t,calc,periodo,anio,ciudad,fecha){
   <div class="gratb-neto-box">MONTO PAGADO: S/ ${fmt(calc.neto)}</div>
   <div style="padding:8px 18px 0;font-size:11px;color:#444;">SON: ${_liqNumLetras(calc.neto)}</div>
   <div class="boleta-firmas-grid" style="margin-top:6px;">
-    <div><div class="boleta-firma-linea"></div>
+    <div class="boleta-firma-wrap">
+      <div class="boleta-firma-linea"></div>
       <div style="text-align:center;margin-top:3px"><b>${t.apPat} ${t.apMat}, ${t.nombres}</b></div>
-      <div style="text-align:center">${t.tipoDoc||'DNI'}: ${t.doc||'—'}</div></div>
-    <div>${_firmaEmpresaHtml()}<div class="boleta-firma-linea"></div>
-      <div style="text-align:center;margin-top:3px"><b></b></div>
-      <div style="text-align:center">RUC: ${emp.ruc||'—'}</div></div>
+      <div style="text-align:center">${t.tipoDoc||'DNI'}: ${t.doc||'—'}</div>
+    </div>
+    <div class="boleta-firma-wrap">
+      ${_firmaEmpresaHtml()}
+      <div class="boleta-firma-linea"></div>
+      <div style="text-align:center;margin-top:3px"><b>${emp.razon||'—'}</b></div>
+      <div style="text-align:center">RUC: ${emp.ruc||'—'}</div>
+    </div>
   </div>`;
 }
 
@@ -10300,12 +10312,17 @@ function htmlLiquidacionDocumento(L, emp){
     </div>
 
     <div class="boleta-firmas-grid">
-      <div><div class="boleta-firma-linea"></div>
+      <div class="boleta-firma-wrap">
+        <div class="boleta-firma-linea"></div>
         <div style="text-align:center;margin-top:3px"><b>${nombreCompleto.toUpperCase()}</b></div>
-        <div style="text-align:center">${t?(t.tipoDoc||'DNI')+': '+(t.doc||'—'):'—'}</div></div>
-      <div>${_firmaEmpresaHtml()}<div class="boleta-firma-linea"></div>
+        <div style="text-align:center">${t?(t.tipoDoc||'DNI')+': '+(t.doc||'—'):'—'}</div>
+      </div>
+      <div class="boleta-firma-wrap">
+        ${_firmaEmpresaHtml()}
+        <div class="boleta-firma-linea"></div>
         <div style="text-align:center;margin-top:3px"><b>${emp.razon.toUpperCase()}</b></div>
-        <div style="text-align:center">Empleador / Representante Legal${emp.ruc?' — RUC: '+emp.ruc:''}</div></div>
+        <div style="text-align:center">Empleador / Representante Legal${emp.ruc?' — RUC: '+emp.ruc:''}</div>
+      </div>
     </div>
 
     <div class="btn-group" style="margin-top:16px;">
