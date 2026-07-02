@@ -15388,50 +15388,44 @@ function hacerLogin(){
     errorEl.textContent='⚠️ Ingresa tu correo y contraseña.';
     errorEl.style.display='block'; return;
   }
-  if(typeof firebase==='undefined'){
-    errorEl.textContent='⚠️ No se pudo conectar con Firebase. Verifica tu internet.';
-    errorEl.style.display='block'; return;
-  }
 
   btnEl.disabled=true;
   loadEl.style.display='block';
 
-  // Esperar hasta que haya al menos una app Firebase inicializada
-  function intentarAuth(intentos){
-    if(intentos > 30){
+  // Usar la API REST de Firebase Auth directamente (no depende de firebase.apps)
+  const API_KEY = "AIzaSyCZYSuL1zzGkUHxtxLG73FpcHNbeMZF94E";
+  fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${API_KEY}`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({email, password, returnSecureToken: true})
+  })
+  .then(res => res.json())
+  .then(data => {
+    if(data.error){
       btnEl.disabled=false; loadEl.style.display='none';
-      errorEl.textContent='⚠️ Firebase tardó demasiado en inicializar. Recarga la página.';
-      errorEl.style.display='block'; return;
+      let msg='⚠️ ';
+      const code = data.error.message;
+      if(code==='INVALID_PASSWORD'||code==='EMAIL_NOT_FOUND'||code==='INVALID_LOGIN_CREDENTIALS')
+        msg+='Correo o contraseña incorrectos.';
+      else if(code==='TOO_MANY_ATTEMPTS_TRY_LATER')
+        msg+='Demasiados intentos. Espera unos minutos.';
+      else if(code==='USER_DISABLED')
+        msg+='Esta cuenta está deshabilitada.';
+      else msg+='Error: '+code;
+      errorEl.textContent=msg; errorEl.style.display='block';
+      return;
     }
-    if(!firebase.apps || firebase.apps.length === 0){
-      setTimeout(()=>intentarAuth(intentos+1), 200); return;
-    }
-    // Usar siempre la app [DEFAULT] que es la correcta
-    const auth = firebase.app('[DEFAULT]').auth();
-    _loginAuth = auth;
-    auth.signInWithEmailAndPassword(email, password)
-      .then(cred=>{
-        const uid = cred.user.uid;
-        localStorage.setItem('planilla_session', JSON.stringify({uid, email, ts:Date.now()}));
-        _aplicarPermisos(uid, email);
-        _mostrarApp();
-      })
-      .catch(err=>{
-        btnEl.disabled=false;
-        loadEl.style.display='none';
-        let msg='⚠️ ';
-        if(err.code==='auth/user-not-found'||err.code==='auth/invalid-credential'||err.code==='auth/wrong-password')
-          msg+='Correo o contraseña incorrectos.';
-        else if(err.code==='auth/too-many-requests')
-          msg+='Demasiados intentos. Espera unos minutos.';
-        else if(err.code==='auth/network-request-failed')
-          msg+='Sin conexión a internet.';
-        else msg+='Error: '+err.code;
-        errorEl.textContent=msg;
-        errorEl.style.display='block';
-      });
-  }
-  intentarAuth(0);
+    // Login exitoso
+    const uid = data.localId;
+    localStorage.setItem('planilla_session', JSON.stringify({uid, email, ts:Date.now(), idToken:data.idToken}));
+    _aplicarPermisos(uid, email);
+    _mostrarApp();
+  })
+  .catch(err=>{
+    btnEl.disabled=false; loadEl.style.display='none';
+    errorEl.textContent='⚠️ Sin conexión a internet. Verifica tu red.';
+    errorEl.style.display='block';
+  });
 }
 
 function _aplicarPermisos(uid, email){
