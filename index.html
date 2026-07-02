@@ -15503,6 +15503,10 @@ function cerrarSesion(){
     appId:             "1:535880150883:web:1463eff703823b152bed56"
   };
 
+  // Siempre mostrar login al cargar la página
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('app-main').style.display='none';
+
   function getAuth(){
     if(typeof firebase==='undefined') return null;
     try{
@@ -15515,26 +15519,17 @@ function cerrarSesion(){
 
   function intentar(veces){
     if(typeof firebase === 'undefined'){
-      if(veces > 30){ mostrarLoginDirecto(); return; }
+      if(veces > 30) return;
       setTimeout(()=>intentar(veces+1), 200); return;
     }
     const auth = getAuth();
-    if(!auth){ mostrarLoginDirecto(); return; }
-
-    auth.onAuthStateChanged(user=>{
-      if(user){
-        _aplicarPermisos(user.uid, user.email);
-        _mostrarApp();
-      } else {
-        mostrarLoginDirecto();
-      }
-    });
-  }
-
-  function mostrarLoginDirecto(){
-    document.getElementById('login-screen').style.display='flex';
-    document.getElementById('app-main').style.display='none';
-    setTimeout(()=>{ const el=document.getElementById('login-email'); if(el) el.focus(); },100);
+    if(!auth) return;
+    // Cerrar cualquier sesión previa para forzar login siempre
+    auth.signOut().catch(()=>{});
+    setTimeout(()=>{
+      const el=document.getElementById('login-email');
+      if(el) el.focus();
+    }, 300);
   }
 
   intentar(0);
