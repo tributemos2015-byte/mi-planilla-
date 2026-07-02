@@ -13046,6 +13046,10 @@ document.querySelectorAll('.modal-bg').forEach(bg=>{
   bg.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
 });
 document.addEventListener('DOMContentLoaded',function(){
+  // La app solo se inicia después de que el usuario se autentique
+  // Ver función window._iniciarAppPrincipal() llamada desde _mostrarApp()
+});
+function _iniciarAppPrincipal(){
   cargarDB();
   iniciarMedidorAlmacenamiento(); // ← Iniciar medidor automático
   // Si la URL trae ?consulta=TOKEN, se muestra la vista pública del trabajador
@@ -13078,7 +13082,7 @@ document.addEventListener('DOMContentLoaded',function(){
     // Primera vez: mostrar aviso discreto
     setTimeout(()=>_mostrarToast('☁️ Toca 🔴 en la barra para conectar Firebase y sincronizar'), 1500);
   }
-});
+} // fin _iniciarAppPrincipal
 
 // ════════════════════════════════════════════════════════════
 // GENERADOR TXT PARA BCP TELECRÉDITO
@@ -15443,6 +15447,12 @@ function _aplicarPermisos(uid, email){
 function _mostrarApp(){
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app-main').style.display='block';
+
+  // Iniciar la app principal (solo se ejecuta una vez tras login)
+  if(!window._appIniciada){
+    window._appIniciada = true;
+    _iniciarAppPrincipal();
+  }
 
   // Agregar botón de cerrar sesión en el header
   const header = document.getElementById('header');
