@@ -15395,31 +15395,41 @@ function hacerLogin(){
   btnEl.disabled=true;
   loadEl.style.display='block';
 
-  // Usar siempre la primera app inicializada (apps[0]) que es la que tiene auth activo
-  const auth = firebase.apps[0].auth();
-  _loginAuth = auth;
-
-  auth.signInWithEmailAndPassword(email, password)
-    .then(cred=>{
-      const uid = cred.user.uid;
-      localStorage.setItem('planilla_session', JSON.stringify({uid, email, ts:Date.now()}));
-      _aplicarPermisos(uid, email);
-      _mostrarApp();
-    })
-    .catch(err=>{
-      btnEl.disabled=false;
-      loadEl.style.display='none';
-      let msg='⚠️ ';
-      if(err.code==='auth/user-not-found'||err.code==='auth/invalid-credential'||err.code==='auth/wrong-password')
-        msg+='Correo o contraseña incorrectos.';
-      else if(err.code==='auth/too-many-requests')
-        msg+='Demasiados intentos fallidos. Espera unos minutos.';
-      else if(err.code==='auth/network-request-failed')
-        msg+='Sin conexión a internet.';
-      else msg+='Error: '+err.code;
-      errorEl.textContent=msg;
-      errorEl.style.display='block';
-    });
+  // Esperar hasta que haya al menos una app Firebase inicializada
+  function intentarAuth(intentos){
+    if(intentos > 30){
+      btnEl.disabled=false; loadEl.style.display='none';
+      errorEl.textContent='⚠️ Firebase tardó demasiado en inicializar. Recarga la página.';
+      errorEl.style.display='block'; return;
+    }
+    if(!firebase.apps || firebase.apps.length === 0){
+      setTimeout(()=>intentarAuth(intentos+1), 200); return;
+    }
+    const auth = firebase.apps[0].auth();
+    _loginAuth = auth;
+    auth.signInWithEmailAndPassword(email, password)
+      .then(cred=>{
+        const uid = cred.user.uid;
+        localStorage.setItem('planilla_session', JSON.stringify({uid, email, ts:Date.now()}));
+        _aplicarPermisos(uid, email);
+        _mostrarApp();
+      })
+      .catch(err=>{
+        btnEl.disabled=false;
+        loadEl.style.display='none';
+        let msg='⚠️ ';
+        if(err.code==='auth/user-not-found'||err.code==='auth/invalid-credential'||err.code==='auth/wrong-password')
+          msg+='Correo o contraseña incorrectos.';
+        else if(err.code==='auth/too-many-requests')
+          msg+='Demasiados intentos. Espera unos minutos.';
+        else if(err.code==='auth/network-request-failed')
+          msg+='Sin conexión a internet.';
+        else msg+='Error: '+err.code;
+        errorEl.textContent=msg;
+        errorEl.style.display='block';
+      });
+  }
+  intentarAuth(0);
 }
 
 function _aplicarPermisos(uid, email){
@@ -15444,41 +15454,45 @@ function _aplicarPermisos(uid, email){
 }
 
 function _mostrarApp(){
-  document.getElementById('login-screen').classList.add('hidden');
-  document.getElementById('app-main').style.display='block';
+  try{
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('app-main').style.display='block';
+  }catch(e){ console.error('Error mostrando app:',e); }
 
   // Iniciar la app principal (solo se ejecuta una vez tras login)
   if(!window._appIniciada){
     window._appIniciada = true;
-    _iniciarAppPrincipal();
+    try{ _iniciarAppPrincipal(); }catch(e){ console.error('Error en _iniciarAppPrincipal:',e); }
   }
 
   // Agregar botón de cerrar sesión en el header
-  const header = document.getElementById('header');
-  if(header && !document.getElementById('btn-cerrar-sesion')){
-    const ses = window._sesionActual;
-    const div = document.createElement('div');
-    div.style.cssText='display:flex;align-items:center;gap:10px;margin-left:auto;';
-    div.innerHTML=`
-      <span style="font-size:12px;color:rgba(255,255,255,.7)">
-        ${ses.esAdmin?'👑 Admin':'👤 Usuario'} · ${ses.email}
-      </span>
-      <button id="btn-cerrar-sesion" onclick="cerrarSesion()"
-        style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);
-               color:#fff;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">
-        🚪 Salir
-      </button>
-    `;
-    header.appendChild(div);
-  }
+  try{
+    const header = document.getElementById('header');
+    if(header && !document.getElementById('btn-cerrar-sesion')){
+      const ses = window._sesionActual || {esAdmin:true, email:'usuario'};
+      const div = document.createElement('div');
+      div.style.cssText='display:flex;align-items:center;gap:10px;margin-left:auto;';
+      div.innerHTML=`
+        <span style="font-size:12px;color:rgba(255,255,255,.7)">
+          ${ses.esAdmin?'👑 Admin':'👤 Usuario'} · ${ses.email}
+        </span>
+        <button id="btn-cerrar-sesion" onclick="cerrarSesion()"
+          style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);
+                 color:#fff;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">
+          🚪 Salir
+        </button>
+      `;
+      header.appendChild(div);
+    }
+  }catch(e){ console.error('Error agregando botón sesión:',e); }
 
   // Filtrar empresas si es usuario normal
   if(window._empresasPermitidas !== null){
-    _filtrarEmpresasPermitidas();
+    try{ _filtrarEmpresasPermitidas(); }catch(e){}
   }
 
   // Iniciar Firebase sync normalmente
-  if(typeof _iniciarFirebase === 'function' && FIREBASE_CONFIG.apiKey){
+  if(typeof _iniciarFirebase === 'function' && typeof FIREBASE_CONFIG !== 'undefined' && FIREBASE_CONFIG.apiKey){
     try{ _iniciarFirebase(FIREBASE_CONFIG); }catch(e){}
   }
 }
