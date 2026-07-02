@@ -13046,9 +13046,14 @@ document.querySelectorAll('.modal-bg').forEach(bg=>{
   bg.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
 });
 document.addEventListener('DOMContentLoaded',function(){
-  // La app solo se inicia después de que el usuario se autentique
-  // Ver función window._iniciarAppPrincipal() llamada desde _mostrarApp()
-});
+  // Solo iniciar la app si hay sesión válida (login ya verificado)
+  const sesion = localStorage.getItem('planilla_session');
+  if(!sesion) return; // sin sesión, esperar login
+  try{
+    const s = JSON.parse(sesion);
+    if(!s.valido || !s.uid) return;
+  }catch(e){ return; }
+  _iniciarAppPrincipal();
 function _iniciarAppPrincipal(){
   cargarDB();
   iniciarMedidorAlmacenamiento(); // ← Iniciar medidor automático
@@ -15415,30 +15420,12 @@ function hacerLogin(){
       errorEl.textContent=msg; errorEl.style.display='block';
       return;
     }
-    // Login exitoso
+    // Login exitoso — guardar sesión y recargar para iniciar la app limpiamente
     const uid = data.localId;
-    localStorage.setItem('planilla_session', JSON.stringify({uid, email, ts:Date.now(), idToken:data.idToken}));
+    localStorage.setItem('planilla_session', JSON.stringify({uid, email, ts:Date.now(), idToken:data.idToken, valido:true}));
     _aplicarPermisos(uid, email);
-    // Mostrar app directamente
-    document.getElementById('login-screen').style.display='none';
-    document.getElementById('app-main').style.display='block';
-    if(!window._appIniciada){
-      window._appIniciada = true;
-      setTimeout(()=>{
-        try{ _iniciarAppPrincipal(); }catch(e){ console.error('Error app principal:',e); }
-        try{
-          const header=document.getElementById('header');
-          if(header && !document.getElementById('btn-cerrar-sesion')){
-            const ses=window._sesionActual||{esAdmin:true,email};
-            const div=document.createElement('div');
-            div.style.cssText='display:flex;align-items:center;gap:10px;margin-left:auto;';
-            div.innerHTML=`<span style="font-size:12px;color:rgba(255,255,255,.7)">${ses.esAdmin?'👑 Admin':'👤 Usuario'} · ${ses.email}</span>
-              <button id="btn-cerrar-sesion" onclick="cerrarSesion()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">🚪 Salir</button>`;
-            header.appendChild(div);
-          }
-        }catch(e){}
-      }, 100);
-    }
+    // Recargar la página — al volver detectará la sesión válida y mostrará la app
+    location.reload();
   })
   .catch(err=>{
     btnEl.disabled=false; loadEl.style.display='none';
@@ -15530,44 +15517,39 @@ function cerrarSesion(){
 
 // ── Verificar sesión guardada al cargar ──────────────────
 (function verificarSesionGuardada(){
-  const CFG = {
-    apiKey:            "AIzaSyCZYSuL1zzGkUHxtxLG73FpcHNbeMZF94E",
-    authDomain:        "planillaperu2026.firebaseapp.com",
-    projectId:         "planillaperu2026",
-    storageBucket:     "planillaperu2026.firebasestorage.app",
-    messagingSenderId: "535880150883",
-    appId:             "1:535880150883:web:1463eff703823b152bed56"
-  };
-
-  // Siempre mostrar login al cargar la página
+  const sesion = localStorage.getItem('planilla_session');
+  if(sesion){
+    try{
+      const s = JSON.parse(sesion);
+      // Sesión válida y no expirada (24 horas)
+      if(s.valido && s.uid && s.email && (Date.now()-s.ts) < 86400000){
+        _aplicarPermisos(s.uid, s.email);
+        document.getElementById('login-screen').style.display='none';
+        document.getElementById('app-main').style.display='block';
+        // La app se inicia normalmente vía DOMContentLoaded → _iniciarAppPrincipal
+        window._appIniciada = false; // se iniciará desde DOMContentLoaded
+        // Agregar botón cerrar sesión
+        setTimeout(()=>{
+          try{
+            const header=document.getElementById('header');
+            if(header && !document.getElementById('btn-cerrar-sesion')){
+              const ses=window._sesionActual||{esAdmin:true,email:s.email};
+              const div=document.createElement('div');
+              div.style.cssText='display:flex;align-items:center;gap:10px;margin-left:auto;';
+              div.innerHTML=`<span style="font-size:12px;color:rgba(255,255,255,.7)">${ses.esAdmin?'👑 Admin':'👤 Usuario'} · ${s.email}</span>
+                <button id="btn-cerrar-sesion" onclick="cerrarSesion()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">🚪 Salir</button>`;
+              header.appendChild(div);
+            }
+          }catch(e){}
+        }, 500);
+        return;
+      }
+    }catch(e){}
+  }
+  // Sin sesión válida: mostrar login
+  localStorage.removeItem('planilla_session');
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('app-main').style.display='none';
-
-  function getAuth(){
-    if(typeof firebase==='undefined') return null;
-    try{
-      let app = firebase.apps.find(a=>a.name==='[DEFAULT]') || firebase.apps[0];
-      if(!app) app = firebase.initializeApp(CFG);
-      _loginAuth = app.auth();
-      return _loginAuth;
-    }catch(e){ return null; }
-  }
-
-  function intentar(veces){
-    if(typeof firebase === 'undefined'){
-      if(veces > 30) return;
-      setTimeout(()=>intentar(veces+1), 200); return;
-    }
-    const auth = getAuth();
-    if(!auth) return;
-    // Cerrar cualquier sesión previa para forzar login siempre
-    auth.signOut().catch(()=>{});
-    setTimeout(()=>{
-      const el=document.getElementById('login-email');
-      if(el) el.focus();
-    }, 300);
-  }
-
-  intentar(0);
+  setTimeout(()=>{ const el=document.getElementById('login-email'); if(el) el.focus(); },100);
 })();
 </script>
