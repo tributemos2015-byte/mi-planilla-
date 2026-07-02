@@ -1518,10 +1518,10 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
   <div class="card">
     <div class="card-title">⚙️ Parámetros del Período</div>
     <div class="form-grid">
-      <div class="form-group"><label>Trabajador</label><select id="calc-trabajador" onchange="recalcular()"></select></div>
+      <div class="form-group"><label>Trabajador</label><select id="calc-trabajador" onchange="const d=document.getElementById('calc-dias');if(d)d._userEdited=false;recalcular()"></select></div>
       <div class="form-group" style="grid-column:span 2"><label>📅 Período de Planilla</label><input type="hidden" id="calc-mes" value=""><input type="hidden" id="calc-anio" value=""><div class="periodo-locked" onclick="abrirModalPeriodo()" title="Clic para cambiar el período"><span class="pl-icon">📅</span><span class="pl-text" id="calc-periodo-display">— Período —</span><span class="pl-change">✏️ Cambiar</span></div></div>
       
-      <div class="form-group"><label>Días Trabajados</label><input type="number" id="calc-dias" value="30" min="0" max="31" oninput="recalcular()"></div>
+      <div class="form-group"><label>Días Trabajados</label><input type="number" id="calc-dias" value="30" min="0" max="31" oninput="this._userEdited=true;recalcular()"></div>
       <div class="form-group"><label>Horas Extras 25% (nocturnas)</label><input type="number" id="calc-hext25" value="0" min="0" oninput="recalcular()"></div>
       <div class="form-group"><label>Horas Extras 35% (dominicales)</label><input type="number" id="calc-hext35" value="0" min="0" oninput="recalcular()"></div>
       <div class="form-group"><label>Otros Ingresos (S/)</label><input type="number" id="calc-otros" value="0" min="0" step="0.01" oninput="recalcular()"></div>
@@ -5814,7 +5814,7 @@ function _ccHtmlBoletas(t, anios){
 function _ccVerBoleta(tId, mes, anio){
   const t = DB.trabajadores.find(x=>x.id===tId); if(!t) return;
   const pl = DB.planillas.find(p=>p.tId===tId&&p.mes===mes&&p.anio==anio);
-  const r = pl || calcNeto(t,30,0,0,0,0,0,0,0,mes,anio);
+  const r = pl || calcNeto(t,diasProporcionales(t,mes,anio),0,0,0,0,0,0,0,mes,anio);
   const ae = pl ? {essalud:pl.essalud||0,sis:pl.sis||0,sctrP:pl.sctrP||0,svlP:pl.svlP||0,total:(pl.essalud||0)+(pl.sis||0)+(pl.sctrP||0)+(pl.svlP||0)} : calcAportesEmpleador(t,r.totalIngr,r.aporteConceptosManual);
   const html = htmlBoleta(t,r,ae,mes,anio);
   const w = window.open('', '_blank');
@@ -6210,6 +6210,19 @@ function renderTablaDerechohabientes(){
 // ══════════════════════════════════════════════════════════════
 // CÁLCULOS PLANILLA — basado en Conceptos asignados (Tabla SUNAT)
 // ══════════════════════════════════════════════════════════════
+// Calcula los días laborados proporcionales según fecha de ingreso del trabajador
+// y el mes/año del período. Si el trabajador ingresó en ese mes → días reales;
+// si ingresó antes → 30 días (mes completo). Normativa peruana D.Leg. 728.
+function diasProporcionales(t, mes, anio){
+  if(t && t.ingreso){
+    const [aIngr,mIngr,dIngr]=t.ingreso.split('-').map(Number);
+    if(aIngr===parseInt(anio) && mIngr===parseInt(mes)){
+      const ultimoDia=Math.min(new Date(anio,mes,0).getDate(),30);
+      return Math.max(1, ultimoDia-dIngr+1);
+    }
+  }
+  return 30;
+}
 function calcNeto(t,diasTrab,hext25,hext35,otros,adelanto,faltas,tardanza,otrosDesc,mesP,anioP){
   // Garantizar que los aportes del empleador tengan valores por defecto
   if(t.svlMonto==null || t.svlMonto==='') t.svlMonto = 0; // Seguro Vida Ley: sin valor guardado = sin aporte (S/ 0.00)
@@ -6346,7 +6359,28 @@ function recalcular(){
   const tId=document.getElementById('calc-trabajador').value;
   const t=DB.trabajadores.find(x=>x.id===tId);
   if(!t){limpiarCalculo();return;}
-  const dias=parseInt(document.getElementById('calc-dias').value)||30;
+  const mesCalc=parseInt(document.getElementById('calc-mes').value)||(window._periodoGlobal?window._periodoGlobal.mes:new Date().getMonth()+1);
+  const anioCalc=parseInt(document.getElementById('calc-anio').value)||(window._periodoGlobal?window._periodoGlobal.anio:new Date().getFullYear());
+
+  // ── Días proporcionales por ingreso a mitad de mes (normativa peruana D.Leg. 728) ──
+  // Si el trabajador ingresó en el mismo mes/año del período, los días laborados
+  // se calculan desde el día de ingreso hasta el último día del mes (divisor = 30).
+  const calcDiasEl=document.getElementById('calc-dias');
+  if(t.ingreso && !calcDiasEl._userEdited){
+    const [aIngr,mIngr,dIngr]=t.ingreso.split('-').map(Number);
+    if(aIngr===anioCalc && mIngr===mesCalc){
+      // Días laborados = del día de ingreso al último día del mes (ambos inclusive)
+      // Se usa 30 como base normativa; si el mes tiene 31 días se cuentan 30 máx.
+      const ultimoDia=Math.min(new Date(anioCalc,mesCalc,0).getDate(),30);
+      const diasAuto=ultimoDia-dIngr+1;
+      calcDiasEl.value=Math.max(1,diasAuto);
+    } else {
+      // Mes completo o mes posterior al ingreso → 30 días
+      calcDiasEl.value=30;
+    }
+  }
+
+  const dias=parseInt(calcDiasEl.value)||30;
   const hext25=parseFloat(document.getElementById('calc-hext25').value)||0;
   const hext35=parseFloat(document.getElementById('calc-hext35').value)||0;
   const otros=parseFloat(document.getElementById('calc-otros').value)||0;
@@ -6354,8 +6388,6 @@ function recalcular(){
   const faltas=parseInt(document.getElementById('calc-faltas').value)||0;
   const tardanza=parseInt(document.getElementById('calc-tardanza').value)||0;
   const otrosDesc=parseFloat(document.getElementById('calc-otros-desc').value)||0;
-  const mesCalc=parseInt(document.getElementById('calc-mes').value)||(window._periodoGlobal?window._periodoGlobal.mes:new Date().getMonth()+1);
-  const anioCalc=parseInt(document.getElementById('calc-anio').value)||(window._periodoGlobal?window._periodoGlobal.anio:new Date().getFullYear());
   const r=calcNeto(t,dias,hext25,hext35,otros,adelanto,faltas,tardanza,otrosDesc,mesCalc,anioCalc);
   const ae=calcAportesEmpleador(t,r.totalIngr,r.aporteConceptosManual);
   renderCalculo(t,r,ae);
@@ -6371,7 +6403,7 @@ function limpiarCalculo(){
     'calc-adelanto':0, 'calc-faltas':0, 'calc-tardanza':0, 'calc-otros-desc':0
   };
   Object.entries(defaults).forEach(([id,val])=>{
-    const el=document.getElementById(id); if(el) el.value=val;
+    const el=document.getElementById(id); if(el){el.value=val; el._userEdited=false;}
   });
   ['plan-ingresos','plan-descuentos','plan-aportes','plan-resumen'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.innerHTML='<div style="color:#aaa;padding:12px;font-size:13px">Seleccione un trabajador</div>';
@@ -6496,7 +6528,7 @@ function _datosPlanillaMensual(){
 
   const filas=trabs.map((t,i)=>{
     const pl=DB.planillas.find(p=>p.tId===t.id&&p.mes===mes&&p.anio==anio);
-    const r=pl||calcNeto(t,30,0,0,0,0,0,0,0,mes,anio);
+    const r=pl||calcNeto(t,diasProporcionales(t,mes,anio),0,0,0,0,0,0,0,mes,anio);
     const ae=pl?{essalud:pl.essalud||0,sis:pl.sis||0,sctrP:pl.sctrP||0,svlP:pl.svlP||0,total:(pl.essalud||0)+(pl.sis||0)+(pl.sctrP||0)+(pl.svlP||0)}:calcAportesEmpleador(t,r.totalIngr,r.aporteConceptosManual);
 
     const conceptosIngreso = r.conceptosIngreso||[];
@@ -7291,7 +7323,16 @@ function cargarBoleta(){
   const mes=parseInt(document.getElementById('bol-mes').value);
   const anio=document.getElementById('bol-anio').value;
   const pl=DB.planillas.find(p=>p.tId===tId&&p.mes===mes&&p.anio==anio);
-  const r=pl||calcNeto(t,30,0,0,0,0,0,0,0,mes,anio);
+  // Días proporcionales si el trabajador ingresó en este mismo mes (D.Leg. 728)
+  let diasBoleta=30;
+  if(!pl && t.ingreso){
+    const [aIngr,mIngr,dIngr]=t.ingreso.split('-').map(Number);
+    if(aIngr===parseInt(anio) && mIngr===mes){
+      const ultimoDia=Math.min(new Date(anio,mes,0).getDate(),30);
+      diasBoleta=Math.max(1,ultimoDia-dIngr+1);
+    }
+  }
+  const r=pl||calcNeto(t,diasBoleta,0,0,0,0,0,0,0,mes,anio);
   const ae=pl?{essalud:pl.essalud||0,sis:pl.sis||0,sctrP:pl.sctrP||0,svlP:pl.svlP||0,total:(pl.essalud||0)+(pl.sis||0)+(pl.sctrP||0)+(pl.svlP||0)}:calcAportesEmpleador(t,r.totalIngr,r.aporteConceptosManual);
   renderBoletaHTML(t,r,ae,mes,anio);
 }
@@ -7522,7 +7563,7 @@ function generarTodasBoletas(){
   let cuerpo='';
   trabs.forEach(t=>{
     const pl=DB.planillas.find(p=>p.tId===t.id&&p.mes===mes&&p.anio==anio);
-    const r=pl||calcNeto(t,30,0,0,0,0,0,0,0,mes,anio);
+    const r=pl||calcNeto(t,diasProporcionales(t,mes,anio),0,0,0,0,0,0,0,mes,anio);
     const ae=pl?{essalud:pl.essalud||0,sis:pl.sis||0,sctrP:pl.sctrP||0,svlP:pl.svlP||0,total:(pl.essalud||0)+(pl.sis||0)+(pl.sctrP||0)+(pl.svlP||0)}:calcAportesEmpleador(t,r.totalIngr,r.aporteConceptosManual);
     const boletaHtml = htmlBoleta(t,r,ae,mes,anio);
     // Dos copias por trabajador (Trabajador / Empleador) en una sola hoja A4,
@@ -11356,7 +11397,7 @@ function generarArchivosPLAME(){
   trabs.forEach(t=>{
     const tipoDocCod=_plameTipoDocCodigo(t.tipoDoc);
     const pl=DB.planillas.find(p=>p.tId===t.id&&p.mes===mes&&p.anio==anio);
-    const r=pl||calcNeto(t,30,0,0,0,0,0,0,0,mes,anio);
+    const r=pl||calcNeto(t,diasProporcionales(t,mes,anio),0,0,0,0,0,0,0,mes,anio);
     r.renta5 = 0; // ⚡ FORZAR QUE RENTA5 SEA SIEMPRE 0 - DESHABILITAR 0605 COMPLETAMENTE
     // 🔧 COMPATIBILIDAD: si "r" viene de una planilla ya guardada en DB.planillas
     // ANTES de existir el campo remBasicaProporcion, lo reconstruimos aquí mismo
@@ -11646,7 +11687,7 @@ function generarArchivoAFP(){
   const filas=[];
   trabs.forEach(t=>{
     const pl=DB.planillas.find(p=>p.tId===t.id&&p.mes===parseInt(mes)&&p.anio==anio);
-    const r=pl||calcNeto(t,30,0,0,0,0,0,0,0,parseInt(mes),anio);
+    const r=pl||calcNeto(t,diasProporcionales(t,mes,anio),0,0,0,0,0,0,0,parseInt(mes),anio);
     const ramBase = (r.totalIngrPension!=null) ? r.totalIngrPension : r.totalIngr;
 
     // ── Relación laboral vigente en el mes / inicio / cese (Ítems 8, 9, 10) ──
@@ -12027,7 +12068,7 @@ function renderReporte(){
   if(!trabs.length){tbody.innerHTML='<tr><td colspan="10" style="text-align:center;color:#aaa;padding:20px">Sin trabajadores</td></tr>';return;}
   tbody.innerHTML=trabs.map(t=>{
     const pl=DB.planillas.find(p=>p.tId===t.id&&p.mes===mes&&p.anio==anio);
-    const r=pl||calcNeto(t,30,0,0,0,0,0,0,0,mes,anio);
+    const r=pl||calcNeto(t,diasProporcionales(t,mes,anio),0,0,0,0,0,0,0,mes,anio);
     const ae=pl?{essalud:pl.essalud||0}:calcAportesEmpleador(t,r.totalIngr,r.aporteConceptosManual);
     return`<tr><td><b>${t.apPat}, ${t.nombres}</b></td>
       <td>S/ ${fmt(r.sueldo)}</td><td>S/ ${fmt(r.asigFam||0)}</td>
@@ -12046,7 +12087,7 @@ function exportarCSV(){
   const trabs=getTrabajadoresActuales();
   let csv='Apellidos y Nombres,DNI,Cargo,Regimen,Basico,Asig.Familiar,HH.EE.,Total Ingresos,AFP/ONP,Renta 5ta,Otros Desc.,Neto,EsSalud\n';
   trabs.forEach(t=>{
-    const r=calcNeto(t,30,0,0,0,0,0,0,0,mes,anio);
+    const r=calcNeto(t,diasProporcionales(t,mes,anio),0,0,0,0,0,0,0,mes,anio);
     const ae=calcAportesEmpleador(t,r.totalIngr,r.aporteConceptosManual);
     csv+=`"${t.apPat} ${t.apMat}, ${t.nombres}","${t.doc}","${t.cargo}","${t.regimen}",${r.sueldo},${r.asigFam||0},${(r.horas25||0)+(r.horas35||0)},${r.totalIngr},${(r.descPension||0)+(r.descAfpCom||0)+(r.descAfpPrima||0)},${r.renta5||0},${(r.adelanto||0)+(r.otrosDesc||0)},${r.neto},${ae.essalud}\n`;
   });
@@ -12343,7 +12384,7 @@ function _pbObtenerMontosPorTrabajador(){
     const anio = parseInt(document.getElementById('pb-anio').value);
     trabs.forEach(t=>{
       const pl = DB.planillas.find(p=>p.tId===t.id&&p.mes===mes&&p.anio==anio&&p.empresaId===empId);
-      const r = pl || calcNeto(t,30,0,0,0,0,0,0,0,mes,anio);
+      const r = pl || calcNeto(t,diasProporcionales(t,mes,anio),0,0,0,0,0,0,0,mes,anio);
       if(r.neto>0) montos.push({t, monto:r.neto});
     });
   } else if(tipo==='gratificaciones'){
@@ -13654,7 +13695,7 @@ async function confirmarEnvioMasivo(){
 
     try{
       const pl = DB.planillas.find(pp=>pp.tId===t.id&&pp.mes===p.mes&&pp.anio==p.anio);
-      const r = pl || calcNeto(t,30,0,0,0,0,0,0,0,p.mes,p.anio);
+      const r = pl || calcNeto(t,diasProporcionales(t,p.mes,p.anio),0,0,0,0,0,0,0,p.mes,p.anio);
       const ae = pl ? {essalud:pl.essalud||0,sis:pl.sis||0,sctrP:pl.sctrP||0,svlP:pl.svlP||0,total:(pl.essalud||0)+(pl.sis||0)+(pl.sctrP||0)+(pl.svlP||0)} : calcAportesEmpleador(t,r.totalIngr,r.aporteConceptosManual);
       const params = buildTemplateParams(t, r, ae, p.mes, p.anio, t.email, '');
       await emailjs.send(cfg.serviceId, cfg.templateId, params);
