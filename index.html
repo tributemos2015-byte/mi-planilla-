@@ -15324,9 +15324,17 @@ function _getLoginAuth(){
   if(_loginAuth) return _loginAuth;
   if(typeof firebase === 'undefined') return null;
   try{
-    // Reutiliza la app Firebase ya inicializada o crea una nueva solo para auth
-    const apps = firebase.apps;
-    const app = apps.length ? apps[0] : firebase.initializeApp(FIREBASE_CONFIG,'planilla-login');
+    // Buscar si ya hay una app con el nombre 'planilla-login'
+    let app = firebase.apps.find(a=>a.name==='planilla-login');
+    if(!app){
+      // Si hay apps pero ninguna se llama 'planilla-login', usar la primera disponible
+      // o crear una nueva con nombre único para evitar conflictos
+      if(firebase.apps.length > 0){
+        app = firebase.apps[0];
+      } else {
+        app = firebase.initializeApp(FIREBASE_CONFIG, 'planilla-login');
+      }
+    }
     _loginAuth = app.auth();
     return _loginAuth;
   }catch(e){ console.error('Login auth error:',e); return null; }
@@ -15486,19 +15494,35 @@ function cerrarSesion(){
 
 // ── Verificar sesión guardada al cargar ──────────────────
 (function verificarSesionGuardada(){
-  // Espera a que Firebase esté disponible
+  const CFG = {
+    apiKey:            "AIzaSyCZYSuL1zzGkUHxtxLG73FpcHNbeMZF94E",
+    authDomain:        "planillaperu2026.firebaseapp.com",
+    projectId:         "planillaperu2026",
+    storageBucket:     "planillaperu2026.firebasestorage.app",
+    messagingSenderId: "535880150883",
+    appId:             "1:535880150883:web:1463eff703823b152bed56"
+  };
+
+  function getAuth(){
+    if(typeof firebase==='undefined') return null;
+    try{
+      let app = firebase.apps.find(a=>a.name==='[DEFAULT]') || firebase.apps[0];
+      if(!app) app = firebase.initializeApp(CFG);
+      _loginAuth = app.auth();
+      return _loginAuth;
+    }catch(e){ return null; }
+  }
+
   function intentar(veces){
     if(typeof firebase === 'undefined'){
-      if(veces > 20){ mostrarLoginDirecto(); return; }
-      setTimeout(()=>intentar(veces+1), 300); return;
+      if(veces > 30){ mostrarLoginDirecto(); return; }
+      setTimeout(()=>intentar(veces+1), 200); return;
     }
-    const auth = _getLoginAuth();
+    const auth = getAuth();
     if(!auth){ mostrarLoginDirecto(); return; }
 
-    // Firebase mantiene la sesión automáticamente
     auth.onAuthStateChanged(user=>{
       if(user){
-        // Sesión activa — ingresar directamente
         _aplicarPermisos(user.uid, user.email);
         _mostrarApp();
       } else {
@@ -15508,7 +15532,6 @@ function cerrarSesion(){
   }
 
   function mostrarLoginDirecto(){
-    // Sin sesión activa: mostrar pantalla de login
     document.getElementById('login-screen').style.display='flex';
     document.getElementById('app-main').style.display='none';
     setTimeout(()=>{ const el=document.getElementById('login-email'); if(el) el.focus(); },100);
