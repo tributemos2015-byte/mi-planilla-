@@ -1158,6 +1158,114 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 </script>
 </head>
 <body>
+<!-- ═══════════════════════════════════════════════
+     PANTALLA DE LOGIN — capa visual fija encima de
+     la app. No modifica ningún flujo existente.
+     La app carga normalmente por debajo.
+════════════════════════════════════════════════ -->
+<div id="login-screen" style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#1A3A5C,#0d2236);display:flex;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:40px 36px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.4)">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-size:36px">🇵🇪</div>
+      <h1 style="font-size:22px;color:#1A3A5C;margin:8px 0 2px;font-weight:700">SistemaPlanilla <span style="color:#C9A84C">PRO</span></h1>
+      <p style="font-size:12px;color:#888;margin:0">Sistema de Planilla de Remuneraciones · Perú 2026</p>
+    </div>
+    <div style="margin-bottom:16px">
+      <label style="display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:6px;letter-spacing:.5px">CORREO ELECTRÓNICO</label>
+      <input type="email" id="login-email" placeholder="usuario@empresa.com" autocomplete="email"
+        style="width:100%;padding:11px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;outline:none"
+        onkeydown="if(event.key==='Enter')document.getElementById('login-password').focus()">
+    </div>
+    <div style="margin-bottom:8px">
+      <label style="display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:6px;letter-spacing:.5px">CONTRASEÑA</label>
+      <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password"
+        style="width:100%;padding:11px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;outline:none"
+        onkeydown="if(event.key==='Enter')_doLogin()">
+    </div>
+    <button onclick="_doLogin()"
+      style="width:100%;padding:13px;background:#1A3A5C;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;margin-top:12px">
+      🔐 Ingresar al Sistema
+    </button>
+    <div id="_lerr" style="display:none;background:#fdecea;color:#c0392b;border-radius:8px;padding:10px 14px;font-size:13px;margin-top:12px;border-left:3px solid #c0392b"></div>
+    <div id="_lload" style="display:none;text-align:center;color:#888;font-size:13px;margin-top:10px">⏳ Verificando...</div>
+    <div style="text-align:center;margin-top:14px">
+      <a href="#" onclick="_doReset();return false" style="font-size:12px;color:#999;text-decoration:none;border-bottom:1px dashed #ccc">¿Olvidaste tu contraseña?</a>
+    </div>
+    <div id="_lreset" style="display:none;background:#e8f5e9;color:#2e7d32;border-radius:8px;padding:10px 14px;font-size:13px;margin-top:10px;border-left:3px solid #2e7d32"></div>
+    <div style="text-align:center;font-size:11px;color:#ccc;margin-top:20px">Autenticación segura · Firebase</div>
+  </div>
+</div>
+<script>
+!function(){
+  var K='planilla_login_v1', AK='AIzaSyCZYSuL1zzGkUHxtxLG73FpcHNbeMZF94E';
+  function hide(){
+    document.getElementById('login-screen').style.display='none';
+    setTimeout(function(){
+      var h=document.getElementById('header');
+      if(!h||document.getElementById('_lbtn_salir'))return;
+      var s=JSON.parse(localStorage.getItem(K)||'{}');
+      var d=document.createElement('div');
+      d.style.cssText='display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0';
+      d.innerHTML='<span style="font-size:11px;color:rgba(255,255,255,.8)">👑 '+s.email+'</span>'
+        +'<button id="_lbtn_salir" onclick="_doLogout()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:5px 10px;border-radius:6px;font-size:11px;cursor:pointer">🚪 Salir</button>';
+      h.appendChild(d);
+    },600);
+  }
+  // Verificar sesión guardada (24h)
+  var raw=localStorage.getItem(K);
+  if(raw){try{var p=JSON.parse(raw);if(p.uid&&(Date.now()-p.ts)<86400000){hide();return;}}catch(e){}}
+  localStorage.removeItem(K);
+  // Sin sesión: mostrar login
+  document.getElementById('login-screen').style.display='flex';
+  setTimeout(function(){var e=document.getElementById('login-email');if(e)e.focus();},200);
+
+  window._doLogin=function(){
+    var em=document.getElementById('login-email').value.trim();
+    var pw=document.getElementById('login-password').value;
+    var er=document.getElementById('_lerr');
+    var ld=document.getElementById('_lload');
+    er.style.display='none';
+    if(!em||!pw){er.textContent='⚠️ Ingresa tu correo y contraseña.';er.style.display='block';return;}
+    ld.style.display='block';
+    fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key='+AK,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email:em,password:pw,returnSecureToken:true})
+    }).then(function(r){return r.json();}).then(function(d){
+      ld.style.display='none';
+      if(d.error){
+        var c=d.error.message||'';
+        er.textContent='⚠️ '+(c.includes('INVALID')||c.includes('NOT_FOUND')?'Correo o contraseña incorrectos.':c.includes('TOO_MANY')?'Demasiados intentos. Espera unos minutos.':'Error: '+c);
+        er.style.display='block';return;
+      }
+      localStorage.setItem(K,JSON.stringify({uid:d.localId,email:em,ts:Date.now()}));
+      hide();
+    }).catch(function(){
+      ld.style.display='none';
+      er.textContent='⚠️ Sin conexión a internet.';er.style.display='block';
+    });
+  };
+
+  window._doReset=function(){
+    var em=document.getElementById('login-email').value.trim();
+    var er=document.getElementById('_lerr');
+    var rs=document.getElementById('_lreset');
+    if(!em){er.textContent='⚠️ Escribe tu correo arriba primero.';er.style.display='block';return;}
+    fetch('https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key='+AK,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({requestType:'PASSWORD_RESET',email:em})
+    }).then(function(r){return r.json();}).then(function(d){
+      if(d.error){er.textContent='⚠️ No existe cuenta con ese correo.';er.style.display='block';}
+      else{rs.textContent='✅ Correo enviado a '+em+'. Revisa también Spam.';rs.style.display='block';}
+    });
+  };
+
+  window._doLogout=function(){
+    if(!confirm('¿Cerrar sesión?'))return;
+    localStorage.removeItem(K);
+    location.reload();
+  };
+}();
+</script>
 <!-- VISTA PÚBLICA DE CONSULTA CLOUD — se muestra en vez de todo el panel de
      administración cuando la URL trae ?consulta=TOKEN. Es de solo lectura:
      el trabajador no puede ver ni modificar nada del resto del sistema. -->
