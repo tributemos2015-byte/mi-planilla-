@@ -945,7 +945,7 @@ table.gp-tabla td.gp-col-saldo{background:#C6E0B4;font-weight:800;}
 .boleta-total-row{background:#e8f0fb;font-weight:800;}
 .boleta-neto{background:var(--azul);color:white;text-align:center;padding:12px;font-size:16px;font-weight:800;}
 .boleta-firmas-grid{display:grid;grid-template-columns:1fr 1fr;padding:36px 18px 24px;gap:30px;font-size:11px;color:#555;}
-.boleta-firma-linea{border-top:1px solid #999;margin-top:48px;padding-top:6px;text-align:center;}
+.boleta-firma-linea{border-top:1px solid #999;margin-top:52px;padding-top:6px;text-align:center;}
 /* Cuando la boleta va dentro de una copia apilada (impresión con 2 copias por hoja),
    se reduce el espaciado de firma para que ambas copias quepan en una sola página A4. */
 .boleta-copia-wrap .boleta-firmas-grid{padding:14px 18px 10px;}
@@ -5024,7 +5024,7 @@ function eliminarFirmaEmpleador(){
 function _firmaEmpresaHtml(estilo){
   const emp = getEmpresa();
   if(!emp || !emp.firma) return '';
-  const st = estilo || 'max-height:55px;max-width:160px;position:absolute;bottom:8px;left:50%;transform:translateX(-50%);';
+  const st = estilo || 'max-height:50px;max-width:150px;display:block;margin:0 auto -8px;';
   return `<img src="${emp.firma}" style="${st}" alt="Firma empleador">`;
 }
 
@@ -7589,7 +7589,7 @@ function htmlBoleta(t,r,ae,mes,anio){
     <div><div class="boleta-firma-linea"></div>
       <div style="text-align:center;margin-top:3px"><b>${t.apPat} ${t.apMat}, ${t.nombres}</b></div>
       <div style="text-align:center">${t.tipoDoc||'DNI'}: ${t.doc||'—'}</div></div>
-    <div style="position:relative">${_firmaEmpresaHtml()}<div class="boleta-firma-linea"></div>
+    <div>${_firmaEmpresaHtml()}<div class="boleta-firma-linea"></div>
       <div style="text-align:center;margin-top:3px"><b>${emp.razon||'—'}</b></div>
       <div style="text-align:center">RUC: ${emp.ruc||'—'}</div></div>
   </div>`;
@@ -9058,7 +9058,7 @@ function htmlBoletaGratificacion(t,calc,periodo,anio,ciudad,fecha){
     <div><div class="boleta-firma-linea"></div>
       <div style="text-align:center;margin-top:3px"><b>${t.apPat} ${t.apMat}, ${t.nombres}</b></div>
       <div style="text-align:center">${t.tipoDoc||'DNI'}: ${t.doc||'—'}</div></div>
-    <div style="position:relative">${_firmaEmpresaHtml()}<div class="boleta-firma-linea"></div>
+    <div>${_firmaEmpresaHtml()}<div class="boleta-firma-linea"></div>
       <div style="text-align:center;margin-top:3px"><b></b></div>
       <div style="text-align:center">RUC: ${emp.ruc||'—'}</div></div>
   </div>`;
@@ -10303,7 +10303,7 @@ function htmlLiquidacionDocumento(L, emp){
       <div><div class="boleta-firma-linea"></div>
         <div style="text-align:center;margin-top:3px"><b>${nombreCompleto.toUpperCase()}</b></div>
         <div style="text-align:center">${t?(t.tipoDoc||'DNI')+': '+(t.doc||'—'):'—'}</div></div>
-      <div style="position:relative">${_firmaEmpresaHtml()}<div class="boleta-firma-linea"></div>
+      <div>${_firmaEmpresaHtml()}<div class="boleta-firma-linea"></div>
         <div style="text-align:center;margin-top:3px"><b>${emp.razon.toUpperCase()}</b></div>
         <div style="text-align:center">Empleador / Representante Legal${emp.ruc?' — RUC: '+emp.ruc:''}</div></div>
     </div>
