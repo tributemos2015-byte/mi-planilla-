@@ -1151,25 +1151,6 @@ table.ctb-tabla tfoot td{background:#eef3fa;font-weight:800;border-top:2px solid
 .wordart-estilo4{background:linear-gradient(135deg,#16A085,#27AE60);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(2px 2px 2px rgba(22,160,133,0.3));}
 .wordart-estilo5{background:linear-gradient(135deg,#8E44AD,#9B59B6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(2px 2px 2px rgba(142,68,173,0.3));}
 .wordart-estilo6{color:#FFFFFF;text-shadow:0 0 10px rgba(0,0,0,0.5),0 0 20px rgba(0,0,0,0.3);}
-/* ═══════════════ LOGIN SCREEN ═══════════════ */
-#login-screen{position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#1A3A5C 0%,#0d2236 60%,#1a3a5c 100%);display:flex;align-items:center;justify-content:center;}
-#login-screen.hidden{display:none;}
-.login-box{background:#fff;border-radius:16px;padding:40px 36px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.4);}
-.login-logo{text-align:center;margin-bottom:24px;}
-.login-logo h1{font-size:22px;color:#1A3A5C;margin:8px 0 2px;font-weight:700;}
-.login-logo p{font-size:12px;color:#888;margin:0;}
-.login-logo .flag{font-size:36px;}
-.login-field{margin-bottom:16px;}
-.login-field label{display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;}
-.login-field input{width:100%;padding:11px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;transition:border .2s;outline:none;}
-.login-field input:focus{border-color:#1A3A5C;}
-.login-btn{width:100%;padding:13px;background:#1A3A5C;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;margin-top:8px;transition:background .2s;}
-.login-btn:hover{background:#0d2236;}
-.login-btn:disabled{background:#aaa;cursor:not-allowed;}
-#login-error{background:#fdecea;color:#c0392b;border-radius:8px;padding:10px 14px;font-size:13px;margin-top:12px;display:none;border-left:3px solid #c0392b;}
-#login-loading{text-align:center;color:#888;font-size:13px;margin-top:10px;display:none;}
-.login-version{text-align:center;font-size:11px;color:#bbb;margin-top:20px;}
-#app-main{display:none;}
 </style>
 <script>
 /* QRCode.js embebido (offline, sin CDN) — github.com/davidshimjs/qrcodejs */
@@ -1177,39 +1158,123 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 </script>
 </head>
 <body>
-<!-- ═══════════════ PANTALLA DE LOGIN ═══════════════ -->
-<div id="login-screen">
-  <div class="login-box">
-    <div class="login-logo">
-      <div class="flag">🇵🇪</div>
-      <h1>SistemaPlanilla <span style="color:#C9A84C">PRO</span></h1>
-      <p>Sistema de Planilla de Remuneraciones · Perú 2026</p>
+<!-- LOGIN SCREEN - capa visual sobre la app, no toca nada del flujo existente -->
+<div id="login-screen" style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#1A3A5C,#0d2236);display:flex;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:40px 36px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.4)">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-size:36px">🇵🇪</div>
+      <h1 style="font-size:22px;color:#1A3A5C;margin:8px 0 2px;font-weight:700">SistemaPlanilla <span style="color:#C9A84C">PRO</span></h1>
+      <p style="font-size:12px;color:#888;margin:0">Sistema de Planilla de Remuneraciones · Perú 2026</p>
     </div>
-    <div class="login-field">
-      <label>Correo electrónico</label>
-      <input type="email" id="login-email" placeholder="usuario@empresa.com" autocomplete="email"
+    <div style="margin-bottom:16px">
+      <label style="display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:6px;text-transform:uppercase">Correo electrónico</label>
+      <input type="email" id="login-email" placeholder="usuario@empresa.com"
+        style="width:100%;padding:11px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;outline:none"
         onkeydown="if(event.key==='Enter')document.getElementById('login-password').focus()">
     </div>
-    <div class="login-field">
-      <label>Contraseña</label>
-      <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password"
+    <div style="margin-bottom:16px">
+      <label style="display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:6px;text-transform:uppercase">Contraseña</label>
+      <input type="password" id="login-password" placeholder="••••••••"
+        style="width:100%;padding:11px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;outline:none"
         onkeydown="if(event.key==='Enter')hacerLogin()">
     </div>
-    <button class="login-btn" id="login-btn" onclick="hacerLogin()">🔐 Ingresar al Sistema</button>
-    <div id="login-error"></div>
-    <div id="login-loading">⏳ Verificando credenciales...</div>
+    <button id="login-btn" onclick="hacerLogin()"
+      style="width:100%;padding:13px;background:#1A3A5C;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;margin-top:4px">
+      🔐 Ingresar al Sistema
+    </button>
+    <div id="login-error" style="display:none;background:#fdecea;color:#c0392b;border-radius:8px;padding:10px 14px;font-size:13px;margin-top:12px;border-left:3px solid #c0392b"></div>
+    <div id="login-loading" style="display:none;text-align:center;color:#888;font-size:13px;margin-top:10px">⏳ Verificando...</div>
     <div style="text-align:center;margin-top:12px">
-      <a href="#" onclick="recuperarClave();return false;"
-         style="font-size:12px;color:#888;text-decoration:none;border-bottom:1px dashed #ccc">
-        ¿Olvidaste tu contraseña?
-      </a>
+      <a href="#" onclick="recuperarClave();return false" style="font-size:12px;color:#888;text-decoration:none;border-bottom:1px dashed #ccc">¿Olvidaste tu contraseña?</a>
     </div>
     <div id="login-reset-msg" style="display:none;background:#e8f5e9;color:#2e7d32;border-radius:8px;padding:10px 14px;font-size:13px;margin-top:10px;border-left:3px solid #2e7d32"></div>
-    <div class="login-version">Autenticación segura · Firebase Authentication</div>
+    <div style="text-align:center;font-size:11px;color:#bbb;margin-top:20px">Autenticación segura · Firebase Authentication</div>
   </div>
 </div>
-<!-- ═══════════════ APP PRINCIPAL ═══════════════ -->
-<div id="app-main">
+
+<script>
+const _LOGIN_API_KEY = "AIzaSyCZYSuL1zzGkUHxtxLG73FpcHNbeMZF94E";
+const _LOGIN_ADMIN_UID_KEY = 'planilla_admin_uid';
+
+function hacerLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const password=document.getElementById('login-password').value;
+  const errorEl=document.getElementById('login-error');
+  const loadEl=document.getElementById('login-loading');
+  const btnEl=document.getElementById('login-btn');
+  errorEl.style.display='none';
+  if(!email||!password){errorEl.textContent='⚠️ Ingresa tu correo y contraseña.';errorEl.style.display='block';return;}
+  btnEl.disabled=true;loadEl.style.display='block';
+  fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key='+_LOGIN_API_KEY,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({email,password,returnSecureToken:true})
+  }).then(r=>r.json()).then(d=>{
+    if(d.error){
+      btnEl.disabled=false;loadEl.style.display='none';
+      const c=d.error.message;
+      errorEl.textContent='⚠️ '+(c.includes('INVALID')||c.includes('NOT_FOUND')?'Correo o contraseña incorrectos.':c.includes('TOO_MANY')?'Demasiados intentos. Espera unos minutos.':'Error: '+c);
+      errorEl.style.display='block';return;
+    }
+    const uid=d.localId;
+    localStorage.setItem('planilla_login_session',JSON.stringify({uid,email,ts:Date.now()}));
+    if(!localStorage.getItem(_LOGIN_ADMIN_UID_KEY))localStorage.setItem(_LOGIN_ADMIN_UID_KEY,uid);
+    window._sesionActual={uid,email,esAdmin:uid===localStorage.getItem(_LOGIN_ADMIN_UID_KEY)};
+    _ocultarLogin();
+  }).catch(()=>{btnEl.disabled=false;loadEl.style.display='none';errorEl.textContent='⚠️ Sin conexión a internet.';errorEl.style.display='block';});
+}
+
+function recuperarClave(){
+  const email=document.getElementById('login-email').value.trim();
+  const errorEl=document.getElementById('login-error');
+  const resetEl=document.getElementById('login-reset-msg');
+  if(!email){errorEl.textContent='⚠️ Escribe tu correo arriba primero.';errorEl.style.display='block';return;}
+  fetch('https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key='+_LOGIN_API_KEY,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({requestType:'PASSWORD_RESET',email})
+  }).then(r=>r.json()).then(d=>{
+    if(d.error){errorEl.textContent='⚠️ '+(d.error.message.includes('NOT_FOUND')?'No existe cuenta con ese correo.':'Error: '+d.error.message);errorEl.style.display='block';}
+    else{resetEl.textContent='✅ Correo de recuperación enviado a '+email+'. Revisa también Spam.';resetEl.style.display='block';}
+  });
+}
+
+function _ocultarLogin(){
+  document.getElementById('login-screen').style.display='none';
+  setTimeout(()=>{
+    const header=document.getElementById('header');
+    if(header&&!document.getElementById('btn-cerrar-sesion')){
+      const ses=window._sesionActual||{esAdmin:true,email:'Admin'};
+      const div=document.createElement('div');
+      div.style.cssText='display:flex;align-items:center;gap:10px;margin-left:auto;flex-shrink:0';
+      div.innerHTML=`<span style="font-size:11px;color:rgba(255,255,255,.75)">${ses.esAdmin?'👑 Admin':'👤 Usuario'} · ${ses.email}</span>
+        <button id="btn-cerrar-sesion" onclick="cerrarSesion()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:5px 10px;border-radius:6px;font-size:11px;cursor:pointer">🚪 Salir</button>`;
+      header.appendChild(div);
+    }
+  },500);
+}
+
+function cerrarSesion(){
+  if(!confirm('¿Cerrar sesión?'))return;
+  localStorage.removeItem('planilla_login_session');
+  location.reload();
+}
+
+// Verificar sesión al cargar (válida por 24 horas)
+(function(){
+  const s=localStorage.getItem('planilla_login_session');
+  if(s){
+    try{
+      const p=JSON.parse(s);
+      if(p.uid&&p.email&&(Date.now()-p.ts)<86400000){
+        window._sesionActual={uid:p.uid,email:p.email,esAdmin:p.uid===localStorage.getItem(_LOGIN_ADMIN_UID_KEY)};
+        _ocultarLogin();return;
+      }
+    }catch(e){}
+  }
+  localStorage.removeItem('planilla_login_session');
+  document.getElementById('login-screen').style.display='flex';
+  setTimeout(()=>{const el=document.getElementById('login-email');if(el)el.focus();},200);
+})();
+</script>
 <!-- VISTA PÚBLICA DE CONSULTA CLOUD — se muestra en vez de todo el panel de
      administración cuando la URL trae ?consulta=TOKEN. Es de solo lectura:
      el trabajador no puede ver ni modificar nada del resto del sistema. -->
@@ -3326,7 +3391,6 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
   <div class="tabs" id="cfg-tabs">
     <div class="tab active" onclick="switchTab(this,'cfg-tabs-content','cfg-tab-params')">📊 Parámetros 2026</div>
     <div class="tab" onclick="switchTab(this,'cfg-tabs-content','cfg-tab-sunat')">📋 Tablas SUNAT / PLAME</div>
-    <div class="tab" id="tab-usuarios-permisos" onclick="switchTab(this,'cfg-tabs-content','cfg-tab-usuarios');renderTabUsuarios()">👥 Usuarios y Permisos</div>
   </div>
   <div id="cfg-tabs-content">
 
@@ -3561,40 +3625,6 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       </div>
 
     </div><!-- /cfg-tab-sunat -->
-
-    <!-- TAB USUARIOS Y PERMISOS (solo admin) -->
-    <div class="tab-content" id="cfg-tab-usuarios">
-      <div class="card">
-        <div class="card-title">👥 Usuarios y Permisos</div>
-        <p style="color:#666;font-size:13px;margin-bottom:16px">
-          Aquí puedes asignar qué empresas puede ver cada usuario. Los usuarios se crean en
-          <a href="https://console.firebase.google.com" target="_blank">Firebase Console → Authentication</a>.
-          Copia el <b>UID</b> del usuario y agrégalo aquí con las empresas que puede ver.
-        </p>
-        <div id="lista-permisos-usuarios" style="margin-bottom:16px"></div>
-        <div class="card" style="background:#f8f9fa;padding:16px">
-          <div class="card-title" style="font-size:14px">➕ Agregar / Editar Usuario</div>
-          <div class="form-grid">
-            <div class="form-group">
-              <label>UID del Usuario (de Firebase Console)</label>
-              <input type="text" id="perm-uid" placeholder="Ej: abc123xyz...">
-            </div>
-            <div class="form-group">
-              <label>Nombre o email (referencia)</label>
-              <input type="text" id="perm-nombre" placeholder="Ej: cliente@empresa.com">
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Empresas que puede ver (selecciona una o más)</label>
-            <div id="perm-empresas-checks" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;"></div>
-          </div>
-          <button class="btn btn-primary" onclick="guardarPermisoUsuario()" style="margin-top:12px">
-            💾 Guardar Permisos
-          </button>
-        </div>
-      </div>
-    </div><!-- /cfg-tab-usuarios -->
-
   </div><!-- /cfg-tabs-content -->
 </div>
 
@@ -4821,19 +4851,10 @@ function switchTab(el,containerId,targetId){
 // ══════════════════════════════════════════════════════════════
 function actualizarSelectorEmpresa(){
   const sel=document.getElementById('sel-empresa');sel.innerHTML='';
-  const permitidas = window._empresasPermitidas; // null=todas, array=filtradas por RUC o índice
   DB.empresas.forEach((e,i)=>{
-    // Si es usuario normal, solo mostrar las empresas asignadas (por RUC)
-    if(permitidas !== null && permitidas !== undefined){
-      if(!permitidas.includes(e.ruc) && !permitidas.includes(String(i))) return;
-    }
     const op=document.createElement('option');op.value=i;op.textContent=e.razon;
     if(i===DB.empresaActual)op.selected=true;sel.appendChild(op);
   });
-  // Si la empresa actual no está en la lista permitida, seleccionar la primera disponible
-  if(sel.options.length>0 && !Array.from(sel.options).find(o=>parseInt(o.value)===DB.empresaActual)){
-    DB.empresaActual=parseInt(sel.options[0].value);
-  }
 }
 function cambiarEmpresa(idx){
   DB.empresaActual=parseInt(idx);
@@ -13046,10 +13067,6 @@ document.querySelectorAll('.modal-bg').forEach(bg=>{
   bg.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
 });
 document.addEventListener('DOMContentLoaded',function(){
-  // La app siempre inicializa sus datos — el login-screen controla el acceso visual
-  _iniciarAppPrincipal();
-});
-function _iniciarAppPrincipal(){
   cargarDB();
   iniciarMedidorAlmacenamiento(); // ← Iniciar medidor automático
   // Si la URL trae ?consulta=TOKEN, se muestra la vista pública del trabajador
@@ -13082,7 +13099,7 @@ function _iniciarAppPrincipal(){
     // Primera vez: mostrar aviso discreto
     setTimeout(()=>_mostrarToast('☁️ Toca 🔴 en la barra para conectar Firebase y sincronizar'), 1500);
   }
-} // fin _iniciarAppPrincipal
+});
 
 // ════════════════════════════════════════════════════════════
 // GENERADOR TXT PARA BCP TELECRÉDITO
@@ -15206,363 +15223,4 @@ function descargarArchivoTxt(contenido, nombreArchivo) {
     alert(`✅ ARCHIVO GENERADO: ${nombreArchivo}\n\nListo para BCP Telecrédito`);
 }
 
-// ── Gestión de permisos de usuarios (solo admin) ─────────
-function renderTabUsuarios(){
-  // Mostrar/ocultar tab según si es admin
-  const tabEl = document.getElementById('tab-usuarios-permisos');
-  if(tabEl) tabEl.style.display = (window._sesionActual&&window._sesionActual.esAdmin)?'':'none';
-
-  // Llenar checkboxes de empresas
-  const checks = document.getElementById('perm-empresas-checks');
-  if(checks){
-    checks.innerHTML = DB.empresas.map((e,i)=>
-      `<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
-        <input type="checkbox" class="perm-emp-check" value="${e.ruc||i}"> ${e.razon}
-      </label>`
-    ).join('');
-  }
-
-  // Mostrar usuarios con permisos guardados
-  const permisos = JSON.parse(localStorage.getItem('planilla_permisos_usuarios')||'{}');
-  const lista = document.getElementById('lista-permisos-usuarios');
-  if(!lista) return;
-  const nombres = JSON.parse(localStorage.getItem('planilla_permisos_nombres')||'{}');
-  const keys = Object.keys(permisos);
-  if(!keys.length){ lista.innerHTML='<p style="color:#aaa;font-size:13px">Sin usuarios registrados aún.</p>'; return; }
-  lista.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px">
-    <thead><tr style="background:#1A3A5C;color:#fff">
-      <th style="padding:8px 12px;text-align:left">Usuario / Email</th>
-      <th style="padding:8px 12px;text-align:left">UID</th>
-      <th style="padding:8px 12px;text-align:left">Empresas</th>
-      <th style="padding:8px 12px">Acciones</th>
-    </tr></thead><tbody>
-    ${keys.map(uid=>{
-      const emps = permisos[uid];
-      const nombre = nombres[uid]||uid.substring(0,12)+'...';
-      const empNombres = emps.map(ruc=>{
-        const emp=DB.empresas.find(e=>e.ruc===ruc||e.ruc===String(ruc));
-        return emp?emp.razon:ruc;
-      }).join(', ');
-      return `<tr style="border-bottom:1px solid #eee">
-        <td style="padding:8px 12px">${nombre}</td>
-        <td style="padding:8px 12px;font-size:11px;color:#888">${uid.substring(0,16)}...</td>
-        <td style="padding:8px 12px">${empNombres||'(ninguna)'}</td>
-        <td style="padding:8px 12px;text-align:center">
-          <button onclick="editarPermisoUsuario('${uid}')" style="background:#1A3A5C;color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:12px">✏️ Editar</button>
-          <button onclick="eliminarPermisoUsuario('${uid}')" style="background:#c0392b;color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:12px;margin-left:4px">🗑️</button>
-        </td>
-      </tr>`;
-    }).join('')}
-    </tbody></table>`;
-}
-
-function guardarPermisoUsuario(){
-  const uid = document.getElementById('perm-uid').value.trim();
-  const nombre = document.getElementById('perm-nombre').value.trim();
-  if(!uid){ alert('⚠️ Ingresa el UID del usuario'); return; }
-  const checks = document.querySelectorAll('.perm-emp-check:checked');
-  const empresas = Array.from(checks).map(c=>c.value);
-  if(!empresas.length){ alert('⚠️ Selecciona al menos una empresa'); return; }
-
-  const permisos = JSON.parse(localStorage.getItem('planilla_permisos_usuarios')||'{}');
-  permisos[uid] = empresas;
-  localStorage.setItem('planilla_permisos_usuarios', JSON.stringify(permisos));
-
-  if(nombre){
-    const nombres = JSON.parse(localStorage.getItem('planilla_permisos_nombres')||'{}');
-    nombres[uid] = nombre;
-    localStorage.setItem('planilla_permisos_nombres', JSON.stringify(nombres));
-  }
-
-  // Limpiar form
-  document.getElementById('perm-uid').value='';
-  document.getElementById('perm-nombre').value='';
-  document.querySelectorAll('.perm-emp-check').forEach(c=>c.checked=false);
-  alert('✅ Permisos guardados correctamente');
-  renderTabUsuarios();
-}
-
-function editarPermisoUsuario(uid){
-  const permisos = JSON.parse(localStorage.getItem('planilla_permisos_usuarios')||'{}');
-  const nombres = JSON.parse(localStorage.getItem('planilla_permisos_nombres')||'{}');
-  document.getElementById('perm-uid').value = uid;
-  document.getElementById('perm-nombre').value = nombres[uid]||'';
-  const emps = permisos[uid]||[];
-  document.querySelectorAll('.perm-emp-check').forEach(c=>{
-    c.checked = emps.includes(c.value);
-  });
-}
-
-function eliminarPermisoUsuario(uid){
-  if(!confirm('¿Eliminar permisos de este usuario?')) return;
-  const permisos = JSON.parse(localStorage.getItem('planilla_permisos_usuarios')||'{}');
-  delete permisos[uid];
-  localStorage.setItem('planilla_permisos_usuarios', JSON.stringify(permisos));
-  renderTabUsuarios();
-}
-
-// Mostrar pestaña de usuarios solo si es admin
-document.addEventListener('DOMContentLoaded', function(){
-  setTimeout(()=>{
-    const tabEl = document.getElementById('tab-usuarios-permisos');
-    if(tabEl && window._sesionActual && window._sesionActual.esAdmin){
-      tabEl.style.display='';
-    }
-  }, 1500);
-});
-</script>
-
-<script>
-// ═══════════════════════════════════════════════════════════
-// SISTEMA DE LOGIN CON FIREBASE AUTHENTICATION
-// ═══════════════════════════════════════════════════════════
-
-// UID del administrador — el único que ve TODAS las empresas.
-// Se obtiene de Firebase Console → Authentication → Users → UID del admin.
-// Se guarda en localStorage para no hardcodearlo en el código.
-const ADMIN_UID_KEY = 'planilla_admin_uid';
-
-let _loginAuth = null; // instancia de firebase.auth() para el login
-
-function _getLoginAuth(){
-  if(_loginAuth) return _loginAuth;
-  if(typeof firebase === 'undefined') return null;
-  try{
-    // Buscar si ya hay una app con el nombre 'planilla-login'
-    let app = firebase.apps.find(a=>a.name==='planilla-login');
-    if(!app){
-      // Si hay apps pero ninguna se llama 'planilla-login', usar la primera disponible
-      // o crear una nueva con nombre único para evitar conflictos
-      if(firebase.apps.length > 0){
-        app = firebase.apps[0];
-      } else {
-        app = firebase.initializeApp(FIREBASE_CONFIG, 'planilla-login');
-      }
-    }
-    _loginAuth = app.auth();
-    return _loginAuth;
-  }catch(e){ console.error('Login auth error:',e); return null; }
-}
-
-function recuperarClave(){
-  const email = document.getElementById('login-email').value.trim();
-  const errorEl = document.getElementById('login-error');
-  const resetEl = document.getElementById('login-reset-msg');
-  errorEl.style.display='none';
-  resetEl.style.display='none';
-
-  if(!email){
-    errorEl.textContent='⚠️ Escribe tu correo arriba y luego haz clic en "¿Olvidaste tu contraseña?".';
-    errorEl.style.display='block'; return;
-  }
-  let auth;
-  try{ auth = firebase.app('[DEFAULT]').auth(); }catch(e){ auth = null; }
-  if(!auth){
-    errorEl.textContent='⚠️ Sin conexión a Firebase. Verifica tu internet.';
-    errorEl.style.display='block'; return;
-  }
-  auth.sendPasswordResetEmail(email)
-    .then(()=>{
-      resetEl.textContent='✅ Se envió un correo de recuperación a ' + email + '. Revisa también tu carpeta de Spam.';
-      resetEl.style.display='block';
-    })
-    .catch(err=>{
-      let msg='⚠️ ';
-      if(err.code==='auth/user-not-found') msg+='No existe ninguna cuenta con ese correo.';
-      else if(err.code==='auth/invalid-email') msg+='El correo ingresado no es válido.';
-      else msg+='No se pudo enviar el correo. Intenta desde Firebase Console.';
-      errorEl.textContent=msg;
-      errorEl.style.display='block';
-    });
-}
-
-function hacerLogin(){
-  const email    = document.getElementById('login-email').value.trim();
-  const password = document.getElementById('login-password').value;
-  const btnEl    = document.getElementById('login-btn');
-  const errorEl  = document.getElementById('login-error');
-  const loadEl   = document.getElementById('login-loading');
-
-  errorEl.style.display='none';
-  if(!email || !password){
-    errorEl.textContent='⚠️ Ingresa tu correo y contraseña.';
-    errorEl.style.display='block'; return;
-  }
-
-  btnEl.disabled=true;
-  loadEl.style.display='block';
-
-  // Usar la API REST de Firebase Auth directamente (no depende de firebase.apps)
-  const API_KEY = "AIzaSyCZYSuL1zzGkUHxtxLG73FpcHNbeMZF94E";
-  fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${API_KEY}`, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({email, password, returnSecureToken: true})
-  })
-  .then(res => res.json())
-  .then(data => {
-    if(data.error){
-      btnEl.disabled=false; loadEl.style.display='none';
-      let msg='⚠️ ';
-      const code = data.error.message;
-      if(code==='INVALID_PASSWORD'||code==='EMAIL_NOT_FOUND'||code==='INVALID_LOGIN_CREDENTIALS')
-        msg+='Correo o contraseña incorrectos.';
-      else if(code==='TOO_MANY_ATTEMPTS_TRY_LATER')
-        msg+='Demasiados intentos. Espera unos minutos.';
-      else if(code==='USER_DISABLED')
-        msg+='Esta cuenta está deshabilitada.';
-      else msg+='Error: '+code;
-      errorEl.textContent=msg; errorEl.style.display='block';
-      return;
-    }
-    // Login exitoso — mostrar app directamente
-    const uid = data.localId;
-    localStorage.setItem('planilla_session', JSON.stringify({uid, email, ts:Date.now(), idToken:data.idToken, valido:true}));
-    _aplicarPermisos(uid, email);
-    document.getElementById('login-screen').style.display='none';
-    document.getElementById('app-main').style.display='block';
-    if(!window._appIniciada){
-      window._appIniciada = true;
-      _iniciarAppPrincipal();
-    }
-    // Agregar botón cerrar sesión
-    setTimeout(()=>{
-      try{
-        const header=document.getElementById('header');
-        if(header && !document.getElementById('btn-cerrar-sesion')){
-          const ses=window._sesionActual||{esAdmin:true,email};
-          const div=document.createElement('div');
-          div.style.cssText='display:flex;align-items:center;gap:10px;margin-left:auto;';
-          div.innerHTML=`<span style="font-size:12px;color:rgba(255,255,255,.7)">${ses.esAdmin?'👑 Admin':'👤 Usuario'} · ${email}</span>
-            <button id="btn-cerrar-sesion" onclick="cerrarSesion()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">🚪 Salir</button>`;
-          header.appendChild(div);
-        }
-      }catch(e){}
-    }, 200);
-  })
-  .catch(err=>{
-    btnEl.disabled=false; loadEl.style.display='none';
-    errorEl.textContent='⚠️ Sin conexión a internet. Verifica tu red.';
-    errorEl.style.display='block';
-  });
-}
-
-function _aplicarPermisos(uid, email){
-  // El administrador se identifica guardando su UID manualmente la primera vez.
-  // Si no hay admin_uid guardado, el primer usuario que ingrese se registra como admin.
-  let adminUid = localStorage.getItem(ADMIN_UID_KEY);
-  if(!adminUid){
-    localStorage.setItem(ADMIN_UID_KEY, uid);
-    adminUid = uid;
-  }
-  const esAdmin = (uid === adminUid);
-  window._sesionActual = { uid, email, esAdmin };
-
-  if(!esAdmin){
-    // Usuario normal: filtrar empresas según las que tiene asignadas
-    const permisos = JSON.parse(localStorage.getItem('planilla_permisos_usuarios')||'{}');
-    const empresasPermitidas = permisos[uid] || [];
-    window._empresasPermitidas = empresasPermitidas;
-  } else {
-    window._empresasPermitidas = null; // null = ve todas
-  }
-}
-
-function _mostrarApp(){
-  try{
-    document.getElementById('login-screen').classList.add('hidden');
-    document.getElementById('app-main').style.display='block';
-  }catch(e){ console.error('Error mostrando app:',e); }
-
-  // Iniciar la app principal (solo se ejecuta una vez tras login)
-  if(!window._appIniciada){
-    window._appIniciada = true;
-    try{ _iniciarAppPrincipal(); }catch(e){ console.error('Error en _iniciarAppPrincipal:',e); }
-  }
-
-  // Agregar botón de cerrar sesión en el header
-  try{
-    const header = document.getElementById('header');
-    if(header && !document.getElementById('btn-cerrar-sesion')){
-      const ses = window._sesionActual || {esAdmin:true, email:'usuario'};
-      const div = document.createElement('div');
-      div.style.cssText='display:flex;align-items:center;gap:10px;margin-left:auto;';
-      div.innerHTML=`
-        <span style="font-size:12px;color:rgba(255,255,255,.7)">
-          ${ses.esAdmin?'👑 Admin':'👤 Usuario'} · ${ses.email}
-        </span>
-        <button id="btn-cerrar-sesion" onclick="cerrarSesion()"
-          style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);
-                 color:#fff;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">
-          🚪 Salir
-        </button>
-      `;
-      header.appendChild(div);
-    }
-  }catch(e){ console.error('Error agregando botón sesión:',e); }
-
-  // Filtrar empresas si es usuario normal
-  if(window._empresasPermitidas !== null){
-    try{ _filtrarEmpresasPermitidas(); }catch(e){}
-  }
-
-  // Iniciar Firebase sync normalmente
-  if(typeof _iniciarFirebase === 'function' && typeof FIREBASE_CONFIG !== 'undefined' && FIREBASE_CONFIG.apiKey){
-    try{ _iniciarFirebase(FIREBASE_CONFIG); }catch(e){}
-  }
-}
-
-function _filtrarEmpresasPermitidas(){
-  // Se llama después de que la app cargue los datos
-  // Intercepta la función que llena el selector de empresas
-  const orig = window.poblarSelectEmpresas || window.renderEmpresas;
-  if(!orig) return;
-  // Se aplica el filtro cuando se renderizan las empresas
-  window._filtroEmpresasActivo = true;
-}
-
-function cerrarSesion(){
-  if(!confirm('¿Cerrar sesión?')) return;
-  try{ firebase.app('[DEFAULT]').auth().signOut(); }catch(e){}
-  localStorage.removeItem('planilla_session');
-  location.reload();
-}
-
-// ── Verificar sesión guardada al cargar ──────────────────
-(function verificarSesionGuardada(){
-  const sesion = localStorage.getItem('planilla_session');
-  if(sesion){
-    try{
-      const s = JSON.parse(sesion);
-      // Sesión válida y no expirada (24 horas)
-      if(s.valido && s.uid && s.email && (Date.now()-s.ts) < 86400000){
-        _aplicarPermisos(s.uid, s.email);
-        document.getElementById('login-screen').style.display='none';
-        document.getElementById('app-main').style.display='block';
-        // La app se inicia normalmente vía DOMContentLoaded → _iniciarAppPrincipal
-        window._appIniciada = false; // se iniciará desde DOMContentLoaded
-        // Agregar botón cerrar sesión
-        setTimeout(()=>{
-          try{
-            const header=document.getElementById('header');
-            if(header && !document.getElementById('btn-cerrar-sesion')){
-              const ses=window._sesionActual||{esAdmin:true,email:s.email};
-              const div=document.createElement('div');
-              div.style.cssText='display:flex;align-items:center;gap:10px;margin-left:auto;';
-              div.innerHTML=`<span style="font-size:12px;color:rgba(255,255,255,.7)">${ses.esAdmin?'👑 Admin':'👤 Usuario'} · ${s.email}</span>
-                <button id="btn-cerrar-sesion" onclick="cerrarSesion()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">🚪 Salir</button>`;
-              header.appendChild(div);
-            }
-          }catch(e){}
-        }, 500);
-        return;
-      }
-    }catch(e){}
-  }
-  // Sin sesión válida: mostrar login
-  localStorage.removeItem('planilla_session');
-  document.getElementById('login-screen').style.display='flex';
-  document.getElementById('app-main').style.display='none';
-  setTimeout(()=>{ const el=document.getElementById('login-email'); if(el) el.focus(); },100);
-})();
 </script>
